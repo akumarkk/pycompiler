@@ -71,10 +71,19 @@
  (augassign
   (or "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" "**=" "//="))
  (del_stmt (seq "del" exprlist))
- (pass_stmt "pass")
+
+ (pass_stmt ($--> "pass"
+                  `(Pass)))
+
  (flow_stmt (or break_stmt continue_stmt return_stmt raise_stmt yield_stmt))
- (break_stmt "break")
- (continue_stmt "continue")
+
+ (break_stmt ($--> "break"
+                    `(Break)))
+
+ (continue_stmt ($--> "continue"
+                      `(Continue)))
+
+
  (return_stmt (seq "return" (opt testlist)))
  (yield_stmt yield_expr)
  (raise_stmt (seq "raise" (opt (seq test (opt (seq "from" test))))))
@@ -87,13 +96,32 @@
    "import"
    (or "*" (seq "(" import_as_names ")") import_as_names)))
  (import_as_name (seq 'NAME (opt (seq "as" 'NAME))))
- (dotted_as_name (seq dotted_name (opt (seq "as" 'NAME))))
+
+
+;TODO - Not sure how to invoke dotted_name from here. 
+ (dotted_as_name ($-->  (seq dotted_name (opt (seq "as" 'NAME)))
+                        `(As $3)))
+
+
  (import_as_names
   (seq import_as_name (rep (seq "," import_as_name)) (opt ",")))
- (dotted_as_names (seq dotted_as_name (rep (seq "," dotted_as_name))))
- (dotted_name (seq 'NAME (rep (seq "." 'NAME))))
- (global_stmt (seq "global" 'NAME (rep (seq "," 'NAME))))
- (nonlocal_stmt (seq "nonlocal" 'NAME (rep (seq "," 'NAME))))
+ 
+
+(dotted_as_names ($--> (seq dotted_as_name (rep (seq "," dotted_as_name)))
+                       `(@process-globals($ 1) ($ 2))))
+
+
+ (dotted_name ($-->  (seq 'NAME (rep (seq "." 'NAME)))
+                    `(, @(process-dotted (list (string->symbol ($ 1))) ($ 2)))))
+
+ (global_stmt  ($--> (seq "global" 'NAME (rep (seq "," 'NAME)))
+                     `(Global ,@(process-globals (list (string->symbol ($ 2))) ($ 3)))))
+
+
+ (nonlocal_stmt ($--> (seq "nonlocal" 'NAME (rep (seq "," 'NAME)))
+                     `(Nonlocal ,@(process-globals (list (string->symbol ($ 2))) ($ 3)))))
+
+
  (assert_stmt (seq "assert" test (opt (seq "," test))))
  (compound_stmt
   (or if_stmt
@@ -138,19 +166,17 @@
  (not_test (or (seq "not" not_test) comparison))
  (comparison (seq expr (rep (seq comp_op expr))))
  (comp_op
-  (or 
-	($--> (seq "<") '(Lt ))
-	($--> (seq ">") '(Gt ))
-	($--> (seq "==") '(Eq ))
-	($--> (seq "!=") '(NotEq ))
-	($--> (seq "<=") '(LtE ))
-	($--> (seq ">=") '(GtE ))
-	($--> (seq "in") '(In ))
-	($--> (seq "not" "in") '(NotIn ))
-	($--> (seq "is") '(Is ))
-	($--> (seq "is" "not") '(IsNot ))))
-
-
+  (or "<"
+      ">"
+      "=="
+      ">="
+      "<="
+      "<>"
+      "!="
+      "in"
+      (seq "not" "in")
+      "is"
+      (seq "is" "not")))
  (star_expr (seq "*" expr))
  (expr (seq xor_expr (rep (seq "|" xor_expr))))
  (xor_expr (seq and_expr (rep (seq "^" and_expr))))
@@ -159,10 +185,7 @@
  (arith_expr (seq term (rep (seq (or "+" "-") term))))
  (term (seq factor (rep (seq (or "*" "/" "%" "//") factor))))
 
- ;(factor (or (seq (or "+" "-" "~") factor) power))
- (factor   (or ($--> (seq "(" exp ")")
-		   ($ 2))
-	     'NUM))
+ (factor (or (seq (or "+" "-" "~") factor) power))
 
  ; Example reduction for power:
  ; Note: process-trailers is defined in pyparse-prefix.rkt
