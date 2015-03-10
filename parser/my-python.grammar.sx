@@ -88,7 +88,11 @@
  (yield_stmt yield_expr)
  (raise_stmt (seq "raise" (opt (seq test (opt (seq "from" test))))))
  (import_stmt (or import_name import_from))
- (import_name (seq "import" dotted_as_names))
+
+
+ (import_name ($--> (seq "import" dotted_as_names)
+                    `(Import ($ 2))))
+
  (import_from
   (seq
    "from"
@@ -114,9 +118,12 @@
 
  (dotted_as_name ($-->  (seq dotted_name (opt ($--> (seq "as" 'NAME)
                                              (string->symbol ($ 2)))))
-                        (if ($ 2)
-                            `(, ($ 1), ($ 2))
-                        ($ 1))))
+                        (cond
+                            [(equal? ($ 2) #f) ($ 1)]
+
+                            [(if ($ 2)
+                                `(, ($ 1), ($ 2))
+                            ($ 1))])))
 
 
 
@@ -141,11 +148,17 @@
  
 
 (dotted_as_names ($--> (seq dotted_as_name (rep (seq "," dotted_as_name)))
-                       `(@process-globals($ 1) ($ 2))))
+                       (begin
+                            (display "Invoking dotted_as_name")
+                            (newline)
+                            `(, @(process-globals($ 1) ($ 2))))))
 
 
  (dotted_name ($-->  (seq 'NAME (rep (seq "." 'NAME)))
-                        `( ,@(process-dots ($ 1) ($ 2)))))
+                        (begin 
+                            (display "Invoking dotted_name")
+                            (newline)
+                        `( ,@(process-dots ($ 1) ($ 2))))))
                     ;    (string->symbol (string-append ($ 1) ($ 2))))))
                     ;`(, @(process-dotted (list (string->symbol ($ 1))) ($ 2)))))
 
