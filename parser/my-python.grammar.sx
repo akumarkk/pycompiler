@@ -95,12 +95,45 @@
    (or (seq (rep (or "." "...")) dotted_name) (rep+ (or "." "...")))
    "import"
    (or "*" (seq "(" import_as_names ")") import_as_names)))
- (import_as_name (seq 'NAME (opt (seq "as" 'NAME))))
+
+
+
+ (import_as_name ($-->  (seq 'NAME (opt (seq "as" 'NAME)))
+                        `(Import ,(process-as ($ 2)), ($ 1))))
+
+                       ; (begin
+                        ;    (display "Debugs")
+                        ;    (display ($ 2))
+                        ;    (newline))))
+                        ;'(Import, ($ 1), ($ 2)))))
+                        ;'(Import, ($ 1), ($ 2)))))
+
+
+;(dotted_name (seq 'NAME (rep (seq "." 'NAME))))
+
+
+ (dotted_as_name ($-->  (seq dotted_name (opt ($--> (seq "as" 'NAME)
+                                             (string->symbol ($ 2)))))
+                        (if ($ 2)
+                            `(, ($ 1), ($ 2))
+                        ($ 1))))
+
 
 
 ;TODO - Not sure how to invoke dotted_name from here. 
- (dotted_as_name ($-->  (seq dotted_name (opt (seq "as" 'NAME)))
-                        `(As $3)))
+; (dotted_as_name ($-->  (seq dotted_name (opt ($--> (seq "as" 'NAME) `(,($ 2)))) 
+;                           (if ($ 2)
+;                                `(, ($ 1), ($ 2))
+;                            ($ 1)))))
+
+                       ; (begin
+                        ;    (display "Invoking dotted_as_name - ")
+                         ;   (display ($ 1))
+                          ;  (newline)
+                           ; (display "SECOND - ")
+                          ;  (display ($ 2))
+                          ;  (newline)
+                          ;  `(, @(process-as ($ 1) ($ 2))))))
 
 
  (import_as_names
@@ -112,7 +145,9 @@
 
 
  (dotted_name ($-->  (seq 'NAME (rep (seq "." 'NAME)))
-                    `(, @(process-dotted (list (string->symbol ($ 1))) ($ 2)))))
+                        `( ,@(process-dots ($ 1) ($ 2)))))
+                    ;    (string->symbol (string-append ($ 1) ($ 2))))))
+                    ;`(, @(process-dotted (list (string->symbol ($ 1))) ($ 2)))))
 
  (global_stmt  ($--> (seq "global" 'NAME (rep (seq "," 'NAME)))
                      `(Global ,@(process-globals (list (string->symbol ($ 2))) ($ 3)))))

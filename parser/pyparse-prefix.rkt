@@ -69,7 +69,8 @@
             (set! first 0)
    ;         (display "Base is now - ");
     ;        (display base)
-     ;       (newline))
+     ;       (newline)
+            )
         (void))
 
       (set! base (reverse (cons base attr)))
@@ -81,6 +82,33 @@
      ; (display base)
      ; (newline) 
       (process-dotted base  rest))]))
+
+(define (process-as arg variable)
+  (display "Debugging- ")
+  (display arg)
+  (newline)
+  (display variable)
+  (newline)
+  (match variable
+         ['()
+          (arg)]
+
+         [(cons as var)
+            `(, arg ,var)]))
+
+(define (process-dots base variable)
+  (match variable
+  ['()
+   (begin
+     (set! base (string->symbol base))
+      base)]
+
+  [(cons (list dot var) rest)
+   (begin
+    (set! base (string-append base dot))
+    (set! base (string-append base var))
+    (process-dots base rest))]))
+    ;(process-dots `,base,dot,var rest))]))
 
 
 
@@ -135,7 +163,7 @@
    ; the start symbol is set to `power` instead of `file_input`.
    ; You should change the start symbol as you move up the kinds
    ; of expressions.
-   (start dotted_name)
+   (start dotted_as_name)
    
    (error (λ (tok-ok? tok-name tok-value)
             (if tok-ok?
