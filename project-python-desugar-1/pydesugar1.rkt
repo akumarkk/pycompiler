@@ -26,63 +26,151 @@
 
 ;;; Lift defaults
 (define (lift-defaults stmt)
-  
+
   ; <local definitions go here>
-  
+  (define def-list '())
+  (define kwdef-list '())
+  (define kwonlyargs-list '())
   ; A helper:
   (define (strip-defaults! arguments)
     (match arguments
       [`(Arguments
          (args . ,ids)
          (arg-types . ,arg-types)
-         (vararg ,vararg . ,vararg-type) 
-         (kwonlyargs . ,kwonlyargs) 
+         (vararg ,vararg . ,vararg-type)
+         (kwonlyargs . ,kwonlyargs)
          (kwonlyarg-types . ,kwonlyarg-types)
          (kw_defaults . ,kw_defaults)
          (kwarg ,kwarg . ,kwarg-type)
          (defaults . ,defaults))
        ;=>
-       (error "put something here!")]))
-  
-       
+        (set! def-list defaults)
+        (set! kwdef-list kw_defaults)
+        (set! kwonlyargs-list kwonlyargs)
+        (cond
+        [(equal? kw_defaults '())
+        `(Arguments
+         (args . ,ids)
+         (arg-types . ,arg-types)
+         (vararg ,vararg . ,vararg-type)
+         (kwonlyargs . ,kwonlyargs)
+         (kwonlyarg-types . ,kwonlyarg-types)
+         (kw_defaults . ,kw_defaults)
+         (kwarg ,kwarg . ,kwarg-type)
+         (defaults ,@(map (lambda (x) #f) defaults)))]
+        [else `(Arguments
+         (args . ,ids)
+         (arg-types . ,arg-types)
+         (vararg ,vararg . ,vararg-type)
+         (kwonlyargs . ,kwonlyargs)
+         (kwonlyarg-types . ,kwonlyarg-types)
+         (kw_defaults #f)
+         (kwarg ,kwarg . ,kwarg-type)
+         (defaults ,@(map (lambda (x) #f) arg-types)))])]))
+
+
   (match stmt
-    
-    [`(FunctionDef 
+
+    [`(FunctionDef
        (name ,id)
        (args ,args)
        (body . ,body)
        (decorator_list . ,decorators)
        (returns ,returns))
-     
-     (error "reconstitute the function def")]
-     
+
+     ;(error "reconstitute the function def")]
+     (list `(FunctionDef
+       (name ,id)
+       (args ,(strip-defaults! args))
+       (body . ,body)
+       (decorator_list . ,decorators)
+       (returns ,returns))
+            (cond
+                [(equal? def-list (list #f))
+                                `(Assign (targets (Attribute (Name ,id) __defaults__)) (value (NameConstant None)))]
+                [`(Assign
+                (targets (Attribute (Name ,id) __defaults__))
+                (value ,`(Tuple ,@def-list)))])
+            (cond
+                [(equal? kwonlyargs-list '())
+                                `(Assign (targets (Attribute (Name ,id) __kwdefaults__)) (value (NameConstant None)))]
+                [`(Assign
+                (targets (Attribute (Name ,id) __kwdefaults__))
+                (value (Dict (keys (Str ,@(map symbol->string kwonlyargs-list))) (values ,@kwdef-list))))]))]
     [else (list stmt)]))
-
-
-
-
-
 
 
 ;;; Lift annotations
 (define (lift-annotations stmt)
 
   ; <similar local definitions as lift-defaults>
-  
+  (define args-list '())
+  (define argtype-list '())
+  (define returns-list '())
+  ; A helper:
+  (define (strip-annot! arguments)
+    (match arguments
+      [`(Arguments
+         (args . ,ids)
+         (arg-types . ,arg-types)
+         (vararg ,vararg . ,vararg-type)
+         (kwonlyargs . ,kwonlyargs)
+         (kwonlyarg-types . ,kwonlyarg-types)
+         (kw_defaults . ,kw_defaults)
+         (kwarg ,kwarg . ,kwarg-type)
+         (defaults . ,defaults))
+       ;=>
+        (set! args-list ids)
+        (set! argtype-list arg-types)
+        `(Arguments
+         (args . ,ids)
+         (arg-types ,@(map (lambda (x) #f) arg-types))
+         (vararg ,vararg . ,vararg-type)
+         (kwonlyargs . ,kwonlyargs)
+         (kwonlyarg-types . ,kwonlyarg-types)
+         (kw_defaults . ,kw_defaults)
+         (kwarg ,kwarg . ,kwarg-type)
+         (defaults . ,defaults))]))
+
   (match stmt
-    [`(FunctionDef 
+    [`(FunctionDef
        (name ,id)
        (args ,args)
        (body . ,body)
        (decorator_list . ,decorators)
        (returns ,returns))
-     
-     (error "reconstitute the FunctionDef")]
-    
-    [else (list stmt)]))
 
+     ;(error "reconstitute the FunctionDef")]
+        (set! returns-list returns)
+     (list `(FunctionDef
+       (name ,id)
+       (args ,(strip-annot! args))
+       (body . ,body)
+       (decorator_list . ,decorators)
+       (returns #f))
+            (cond
+                [(and (equal? argtype-list (list #f)) (equal? returns #f))
+                `(Assign
+                (targets (Attribute (Name ,id) __annotations__))
+                (value (Dict (keys) (values))))]
+                [(equal? argtype-list (list #f))
+                `(Assign
+               (targets (Attribute (Name ,id) __annotations__))
+                (value (Dict (keys (Str "return")) (values ,(if (> 1 (length returns-list)) `(Tuple returns-list) returns-list)))))]
+                [(equal? returns (list #f))
+                `(Assign
+                (targets (Attribute (Name ,id) __annotations__))
+                (value (Dict (keys ,@(map (lambda (x)
+                                                `(Str ,(symbol->string x))) (reverse args-list))) (values ,@(reverse argtype-list)))))]
+                [`(Assign
+                (targets (Attribute (Name ,id) __annotations__))
+                (value (Dict (keys (Str "return") ,@(map (lambda (x)
+                                                `(Str ,(symbol->string x))) (reverse args-list)))
+                                (values ,(if (> 1 (length returns-list)) `(Tuple returns-list) returns-list) ,@(reverse argtype-list)))))]))]
+
+    [else (list stmt)]))
        
-       
+ 
     
     
 (define name '())
@@ -150,18 +238,41 @@
 
 
 ;;; Flatten assignments
+;;;Auxiliary functions
+(define ind -1)
+(define (ind-set)
+(set! ind (+ 1 ind)) ind)
+
 (define (flatten-assign stmt)
   (match stmt
     [`(Assign (targets (Name ,id)) (value ,expr))
      (list stmt)]
-    
+
     [`(Assign (targets (,(or 'Tuple 'List) . ,exprs)) (value ,expr))
-     (error "finish me")]
-       
+      `(,
+       `(Assign
+                (targets (Name _tmp_3))
+                (value (Call
+                        (func (Name list))
+                        (args ,expr)
+                        (keywords)
+                        (starargs #f)
+                        (kwargs #f))))
+         ,@(map (lambda (x)
+                `(Assign (targets ,x) (value (Subscript (Name _tmp_3) (Index (Num ,(ind-set)))))))
+                exprs))]
+
     [`(Assign (targets ,t1 ,t2 . ,ts) (value ,expr))
-     (error "finish me")]
-     
+       `(,
+       `(Assign
+                (targets (Name _tmp_3))
+                (value ,expr))
+         ,@(map (lambda (x)
+                `(Assign (targets ,x) (value (Name _tmp_3))))
+                (if (equal? ts '()) (list t1 t2) `(,t1 ,t2 ,@ts))))]
+
     [else (list stmt)]))
+
 
 
 (define tmp5 "_tmp_5")
@@ -428,13 +539,13 @@
 
 (set! prog (walk-module prog #:transform-stmt lift-decorators))
 
-;(set! prog (walk-module prog #:transform-stmt lift-defaults))
+(set! prog (walk-module prog #:transform-stmt lift-defaults))
 
-;(set! prog (walk-module prog #:transform-stmt lift-annotations))
+(set! prog (walk-module prog #:transform-stmt lift-annotations))
 
 (set! prog (walk-module prog #:transform-stmt eliminate-for))
 
-;(set! prog (walk/fix prog #:transform-stmt flatten-assign))
+(set! prog (walk/fix prog #:transform-stmt flatten-assign))
 
 ;This is already implemented by Matt
 (set! prog (walk-module prog #:transform-expr/bu eliminate-classes-expr))
