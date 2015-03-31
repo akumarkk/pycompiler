@@ -319,6 +319,14 @@
 (define tmp12 "_tmp_12")
 (define bodyc1 '())
 
+(define (mycall fun args kargs)
+    `(Call (func ,fun)
+           (args . ,args)
+           (keywords)
+           (starargs #f)
+           (kwargs ,kargs)))
+
+
 
 (define (eliminate-classes-stmt stmt)
   
@@ -333,26 +341,26 @@
        (decorator_list . ,decorators))
 
       (begin
-        (display id)
-        (newline)
-        (display "bases - ")
-        (display bases)
-        (newline)
-        (display "Keywords - ")
-        (display keywords)
-        (newline)
-        (display "starargs - ")
-        (display starargs)
-        (newline)
-        (display "kwargs - ")
-        (display kwargs)
-        (newline)
-        (display "body - ")
-        (display body)
-        (newline)
-        (display "decorators - ")
-        (display decorators)
-        (newline)
+        ;(display id)
+        ;(newline)
+        ;(display "bases - ")
+        ;(display bases)
+        ;(newline)
+        ;(display "Keywords - ")
+        ;(display keywords)
+        ;(newline)
+        ;(display "starargs - ")
+        ;(display starargs)
+        ;(newline)
+        ;(display "kwargs - ")
+        ;(display kwargs)
+        ;(newline)
+        ;(display "body - ")
+        ;(display body)
+        ;(newline)
+        ;(display "decorators - ")
+        ;(display decorators)
+        ;(newline)
         (set! arguments1 (list `(Arguments
                                     (args  ,(string->symbol tmp10))
                                     (arg-types  ,#f) 
@@ -362,21 +370,25 @@
                                     (kw_defaults  (Name type))
                                     (kwarg ,(string->symbol tmp12))
                                     (defaults  (Name object)))))
-        (display "Contructed arguments1 - ")
-        (display arguments1)
-        (newline)
+        ;(display "Contructed arguments1 - ")
+        ;(display arguments1)
+        ;(newline)
 
         (set! bodyc1 (append
                        (list `(Assign (targets  (Name __dict__))
                                       (value    (Dict (keys) (values)))))
                        body
-                       (list `(Return ,(call `(Name metaclass) (list 
+                       (list `(Return ,(mycall `(Name metaclass) (list 
                                                                  `(Str ,(symbol->string id))
                                                                  `(BinOp (Tuple (Name ,(string->symbol tmp10))) Add (Name ,(string->symbol tmp11)))
-                                                                 `(Name __dict__)))))))
-        (display "Constructed bodyc1 - ")
-        (display bodyc1)
-        (newline)
+                                                                 `(Name __dict__))
+                                                `(Name ,(string->symbol tmp12)))))))
+        ;(display "Constructed bodyc1 - ")
+        ;(display bodyc1)
+        ;(newline)
+        ;(display "Symbol - ")
+        ;(display (symbol->string id))
+        ;(newline)
 
         (append 
           (list 
@@ -386,10 +398,11 @@
              (body . ,bodyc1)
              (decorator_list)
              (returns ,#f)))
-          (list `(Assign (targets  ,id) (value ,(call `(Name ,(string->symbol tmp9)) '()))))
-          `(Comment "scope: global")
-          `(Pass)
-          (list `(Assign (targets  ,id) (value ,(call `(Name ,id) '())))))
+          ;(list `(Assign (targets  (Name ,id)) (value ,(call `(Name ,(string->symbol tmp9)) '()))))
+          ;`(Comment "scope: global")
+          ;`(Pass)
+          ;(list `(Assign (targets  (Name ,id)) (value ,(call `(Name ,id) '())))))
+          (list `(Assign (targets  (Name ,id)) (value ,(call `(Name ,(string->symbol tmp9)) '())))))
 
 
 
