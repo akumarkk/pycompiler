@@ -303,6 +303,12 @@
     [else expr]))
 
 
+(define arguments '())
+(define tmp9 "_tmp_9")
+(define tmp10 "_tmp_10")
+(define tmp11 "_tmp_11")
+(define tmp12 "_tmp_12")
+(define bodyc1 '())
 
 
 (define (eliminate-classes-stmt stmt)
@@ -316,8 +322,60 @@
        (kwargs ,kwargs)
        (body . ,body)
        (decorator_list . ,decorators))
+
+      (begin
+        (display id)
+        (newline)
+        (display "bases - ")
+        (display bases)
+        (newline)
+        (display "Keywords - ")
+        (display keywords)
+        (newline)
+        (display "starargs - ")
+        (display starargs)
+        (newline)
+        (display "kwargs - ")
+        (display kwargs)
+        (newline)
+        (display "body - ")
+        (display body)
+        (newline)
+        (display "decorators - ")
+        (display decorators)
+        (newline)
+        (set! arguments (list `(Arguments
+                                    (args  ,(string->symbol tmp10))
+                                    (arg-types  ,#f) 
+                                    (vararg ,(string->symbol tmp10)) 
+                                    (kwonlyargs  ,(string->symbol "metaclass"))
+                                    (kwonlyarg-types  ,#f)
+                                    (kw_defaults  (Name type))
+                                    (kwarg ,(string->symbol tmp12))
+                                    (defaults  (Name object)))))
+        (display "Contructed arguments - ")
+        (display arguments)
+        (newline)
+
+        (set! bodyc1 (append
+                       (list `(Assign (targets  (Name __dict__))
+                                      (value    (Dict (keys) (values)))))
+                       body
+                       (list `(Return ,(call `(Name metaclass) (list 
+                                                                 `(Str ,id)
+                                                                 `(BinOp (Tuple (Name ,(string->symbol tmp10)) Add (Name ,(string->symbol tmp11))))
+                                                                 `(Name __dict__)))))))
+        (display "Constructed bodyc1 - ")
+        (display bodyc1)
+        (newline)
+
+
+
+        )]
+
+
      
-     (error "complete me!")]
+     ;(error "complete me!")]
     
     [else  (list stmt)]))
 
@@ -347,7 +405,7 @@
 ;This is already implemented by Matt
 (set! prog (walk-module prog #:transform-expr/bu eliminate-classes-expr))
 
-;(set! prog (walk-module prog #:transform-stmt eliminate-classes-stmt))
+(set! prog (walk-module prog #:transform-stmt eliminate-classes-stmt))
 
 
 (write prog)
