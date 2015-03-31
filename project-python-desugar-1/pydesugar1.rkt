@@ -115,15 +115,26 @@
         (display body)
         (newline)
         (set! name id)
-        (apply-decorators id decorators)
-        (list `(FunctionDef  
+        ;(apply-decorators id decorators)
+        (append (list `(FunctionDef  
              (name ,name)
              (args ,args)
              (body . ,body)
              (decorator_list  )
              (returns ,returns)))
+                (apply-decorators id decorators))
 
-        (list `(Assign (targets . ,name) (value ,decorators)))
+        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name)))))
+        ;(display "NAME - ")
+        ;(display `(Name, id))
+        ;(newline)
+        ;(list `(Assign (targets . ,(list 'Name name)) (value ,(call decorators name))))
+        ;(list `(Assign (targets . ,(list `(Name ,id))) (value ,(call decorators name))))
+        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name))))
+        ;(display (list stmt))
+        ;(newline)
+        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name)))))
+        ;(list `(Assign, `(targets  , `(Name ,id)) (value ,(call (apply-decorators id decorators) name))))
 
         ;`(Assign `(targets (Attribute `(Name ,id))) `(value , decorators))
 
@@ -145,7 +156,7 @@
 
        (begin
          (apply-decorators id decorators)
-        (list `(ClassDef
+        (append (list `(ClassDef
              (name ,id)
              (bases . ,bases)
              (keywords . ,keywords)
@@ -153,6 +164,7 @@
              (kwargs ,kwargs)
              (body . ,body)
              (decorator_list . ,decorators)))
+                 (apply-decorators id decorators))
       
       ;(error "finish me")]
         )]
