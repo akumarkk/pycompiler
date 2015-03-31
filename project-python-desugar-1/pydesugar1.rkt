@@ -364,7 +364,7 @@
         (set! arguments1 (list `(Arguments
                                     (args  ,(string->symbol tmp10))
                                     (arg-types  ,#f) 
-                                    (vararg ,(string->symbol tmp10)) 
+                                    (vararg ,(string->symbol tmp11)) 
                                     (kwonlyargs  ,(string->symbol "metaclass"))
                                     (kwonlyarg-types  ,#f)
                                     (kw_defaults  (Name type))
@@ -403,7 +403,6 @@
           ;`(Pass)
           ;(list `(Assign (targets  (Name ,id)) (value ,(call `(Name ,id) '())))))
           (list `(Assign (targets  (Name ,id)) (value ,(call `(Name ,(string->symbol tmp9)) '())))))
-
 
 
         )]
