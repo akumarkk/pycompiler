@@ -303,7 +303,7 @@
     [else expr]))
 
 
-(define arguments '())
+(define arguments1 '())
 (define tmp9 "_tmp_9")
 (define tmp10 "_tmp_10")
 (define tmp11 "_tmp_11")
@@ -344,7 +344,7 @@
         (display "decorators - ")
         (display decorators)
         (newline)
-        (set! arguments (list `(Arguments
+        (set! arguments1 (list `(Arguments
                                     (args  ,(string->symbol tmp10))
                                     (arg-types  ,#f) 
                                     (vararg ,(string->symbol tmp10)) 
@@ -353,8 +353,8 @@
                                     (kw_defaults  (Name type))
                                     (kwarg ,(string->symbol tmp12))
                                     (defaults  (Name object)))))
-        (display "Contructed arguments - ")
-        (display arguments)
+        (display "Contructed arguments1 - ")
+        (display arguments1)
         (newline)
 
         (set! bodyc1 (append
@@ -362,12 +362,25 @@
                                       (value    (Dict (keys) (values)))))
                        body
                        (list `(Return ,(call `(Name metaclass) (list 
-                                                                 `(Str ,id)
-                                                                 `(BinOp (Tuple (Name ,(string->symbol tmp10)) Add (Name ,(string->symbol tmp11))))
+                                                                 `(Str ,(symbol->string id))
+                                                                 `(BinOp (Tuple (Name ,(string->symbol tmp10))) Add (Name ,(string->symbol tmp11)))
                                                                  `(Name __dict__)))))))
         (display "Constructed bodyc1 - ")
         (display bodyc1)
         (newline)
+
+        (append 
+          (list 
+           `(FunctionDef 
+             (name ,(string->symbol tmp9))
+             (args .,arguments1)
+             (body . ,bodyc1)
+             (decorator_list)
+             (returns ,#f)))
+          (list `(Assign (targets  ,id) (value ,(call `(Name ,(string->symbol tmp9)) '()))))
+          `(Comment "scope: global")
+          `(Pass)
+          (list `(Assign (targets  ,id) (value ,(call `(Name ,id) '())))))
 
 
 
