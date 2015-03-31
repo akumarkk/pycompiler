@@ -80,8 +80,6 @@
 
 ;;; Lift decorators
 (define (lift-decorators stmt)
-  (display "DECORATORS transformation")
-  (newline)
   
   (define (apply-decorators id decs)
     (match decs
@@ -99,23 +97,7 @@
        (returns ,returns))
 
       (begin
-        (display "Dumping ...")
-        (newline)
-        ;(display name)
-        (newline)
-        (display id)
-        (newline)
-        (display args)
-        (newline)
-        (display "--- END ---")
-        (display decorators)
-        (newline)
-        ;(display value)
-        (newline)
-        (display body)
-        (newline)
         (set! name id)
-        ;(apply-decorators id decorators)
         (append (list `(FunctionDef  
              (name ,name)
              (args ,args)
@@ -124,23 +106,6 @@
              (returns ,returns)))
                 (apply-decorators id decorators))
 
-        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name)))))
-        ;(display "NAME - ")
-        ;(display `(Name, id))
-        ;(newline)
-        ;(list `(Assign (targets . ,(list 'Name name)) (value ,(call decorators name))))
-        ;(list `(Assign (targets . ,(list `(Name ,id))) (value ,(call decorators name))))
-        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name))))
-        ;(display (list stmt))
-        ;(newline)
-        ;(list `(Assign (targets  (Name ,id)) (value ,(call (apply-decorators id decorators) name)))))
-        ;(list `(Assign, `(targets  , `(Name ,id)) (value ,(call (apply-decorators id decorators) name))))
-
-        ;`(Assign `(targets (Attribute `(Name ,id))) `(value , decorators))
-
-        ;(list 'Assign (list 'targets  (list 'Attribute (list 'Name id))))
-
-        ;`(Assign, `(target ,`(Attribute, id), '__annotations__), `(value ,`(Dict, `(Keys), `(values))))
         )]
      
      ;(error "finish me")]
@@ -190,6 +155,13 @@
     [else (list stmt)]))
 
 
+(define tmp5 "_tmp_5")
+(define tmp6 "_tmp_6")
+(define test '())
+(define target1 '())
+(define body1 '())
+(define body2 '())
+(define handlers1 '())
 
 ;;; Convert for to while
 (define (eliminate-for stmt)
@@ -200,8 +172,64 @@
            (iter ,iter)
            (body . ,body)
            (orelse . ,orelse))
+
+      (begin
+        (display "ORIGINAL BODY-")
+        (display body)
+        (newline)
+        (display "Performign compare")
+        (newline)
+        (set! test (list `(Compare (left ,`(Name ,(string->symbol tmp5)))
+                                   (ops . ,(list 'IsNot))
+                                   (comparators , `(NameConstant False)))))
+                                   ;(comparators ,(list `(NameConstant False))))))
+                                   ;(list `(NameConstant False)) is not required here. It adds one more paranthesis.
+
+        (display "Completed compare - ")
+        (display test)
+        (newline)
+        (set! target1 `(Name ,(string->symbol tmp6)))
+        (display target1)
+        (newline)
+        ;(set! body2 (list `(Assign (targets . ,(list `(Name ,(string->symbol tmp5))))
+        (set! body2 (list `(Assign (targets  ,target)
+                                   (value ,(call `(Attribute ,`(Name ,(string->symbol tmp5)) __next__)
+                                                 '())))))
+        (display "Completed body2 - ")
+        (display body2)
+        (newline)
+
+        (set! handlers1 (list `(except
+                                 (Name StopIteration)
+                                 ,#f
+                                 ,`(Assign (targets  ,`(Name ,(string->symbol tmp5))) 
+                                                 (value (NameConstant False)))
+                                 (Continue))))
+        (display "Completed Handlers1- ")
+        (display handlers1)
+        (newline)
+
+        (set! body1 (list `(Try (body . ,body2)
+                                (handlers . ,handlers1)
+                                (orelse)
+                                (finalbody))))
+        (display "Completed body1- ")
+        (display body1)
+        (newline)
+        (set! body1 (append body1 body))
+
+        (append (list `(Assign (targets . ,(list `(Name ,(string->symbol tmp5))))
+                                (value ,`(GeneratorExp  ,`(Name ,(string->symbol tmp6)) 
+                                                         ,`(for ,target1 in ,iter if )))))
+                                ;(value ,`(GeneratorExp  ,`(Name ,(string->symbol tmp6)) (for ,`(Name ,(string->symbol tmp6)) in iter if)))))
+                (list `(While 
+                         (test .,test) 
+                         (body . ,body1) 
+                         (orelse . ,orelse))))
+        ;(list `(For (target ,target) (iter ,iter) (body . ,body) (orelse . ,orelse)))
+      )]
      
-     (error "todo: build a while stmt")]
+     ;(error "todo: build a while stmt")]
               
     
     [else    (list stmt)]))
@@ -312,12 +340,12 @@
 
 ;(set! prog (walk-module prog #:transform-stmt lift-annotations))
 
-;(set! prog (walk-module prog #:transform-stmt eliminate-for))
+(set! prog (walk-module prog #:transform-stmt eliminate-for))
 
 ;(set! prog (walk/fix prog #:transform-stmt flatten-assign))
 
-
-;(set! prog (walk-module prog #:transform-expr/bu eliminate-classes-expr))
+;This is already implemented by Matt
+(set! prog (walk-module prog #:transform-expr/bu eliminate-classes-expr))
 
 ;(set! prog (walk-module prog #:transform-stmt eliminate-classes-stmt))
 
