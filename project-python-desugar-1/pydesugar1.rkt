@@ -64,9 +64,9 @@
          (vararg ,vararg . ,vararg-type)
          (kwonlyargs . ,kwonlyargs)
          (kwonlyarg-types . ,kwonlyarg-types)
-         (kw_defaults #f)
+         (kw_defaults ,@(map (lambda (x) #f) kw_defaults))
          (kwarg ,kwarg . ,kwarg-type)
-         (defaults ,@(map (lambda (x) #f) arg-types)))])]))
+         (defaults ,@(map (lambda (x) #f) defaults)))])]))
 
 
   (match stmt
@@ -86,17 +86,18 @@
        (decorator_list . ,decorators)
        (returns ,returns))
             (cond
-                [(equal? def-list (list #f))
+                [(or (empty? def-list) (equal? (car def-list) #f))
                                 `(Assign (targets (Attribute (Name ,id) __defaults__)) (value (NameConstant None)))]
                 [`(Assign
                 (targets (Attribute (Name ,id) __defaults__))
                 (value ,`(Tuple ,@def-list)))])
             (cond
-                [(equal? kwonlyargs-list '())
+                [(or (equal? kwdef-list '()) (equal? (car kwdef-list) #f))
                                 `(Assign (targets (Attribute (Name ,id) __kwdefaults__)) (value (NameConstant None)))]
                 [`(Assign
                 (targets (Attribute (Name ,id) __kwdefaults__))
-                (value (Dict (keys (Str ,@(map symbol->string kwonlyargs-list))) (values ,@kwdef-list))))]))]
+                (value (Dict (keys ,@(map (lambda (x)
+                                                `(Str ,(symbol->string x))) kwonlyargs-list)) (values ,@kwdef-list))))]))]
     [else (list stmt)]))
 
 
@@ -106,6 +107,12 @@
   ; <similar local definitions as lift-defaults>
   (define args-list '())
   (define argtype-list '())
+  (define kwonlyargs-list '())
+  (define kwonlyargstype-list '())
+  (define kwargs-list '())
+  (define kwargstype-list '())
+  (define vararg-list '())
+  (define varargtype-list '())
   (define returns-list '())
   ; A helper:
   (define (strip-annot! arguments)
@@ -122,15 +129,28 @@
        ;=>
         (set! args-list ids)
         (set! argtype-list arg-types)
+	(set! kwonlyargs-list kwonlyargs)
+	(set! kwonlyargstype-list kwonlyarg-types)
+	(set! kwargs-list kwarg)
+	(set! kwargstype-list kwarg-type)
+	(set! vararg-list vararg)
+	(set! varargtype-list vararg-type) 
         `(Arguments
          (args . ,ids)
          (arg-types ,@(map (lambda (x) #f) arg-types))
-         (vararg ,vararg . ,vararg-type)
+         ,(if (empty? vararg-type) `(vararg ,vararg . ,vararg-type)  `(vararg ,vararg))
          (kwonlyargs . ,kwonlyargs)
-         (kwonlyarg-types . ,kwonlyarg-types)
+         (kwonlyarg-types ,@(map (lambda (x) #f) kwonlyarg-types))
          (kw_defaults . ,kw_defaults)
-         (kwarg ,kwarg . ,kwarg-type)
-         (defaults . ,defaults))]))
+         ,(if (empty? kwarg-type) `(kwarg ,kwarg . ,kwarg-type)  `(kwarg ,kwarg))
+         (defaults ,@(map (lambda (x) #f) defaults)))]))
+  (define key-list '())
+  (define value-list '())
+  (define (build-dict! arg type)
+		(cond
+		[(and (not (empty? arg)) (not (equal? type #f))) (begin
+								(set! key-list (append key-list (list `(Str ,(symbol->string arg)))))
+								(set! value-list (append value-list (list type))))])) 
 
   (match stmt
     [`(FunctionDef
@@ -141,7 +161,7 @@
        (returns ,returns))
 
      ;(error "reconstitute the FunctionDef")]
-        (set! returns-list returns)
+        (set! returns-list returns) 
      (list `(FunctionDef
        (name ,id)
        (args ,(strip-annot! args))
@@ -149,25 +169,26 @@
        (decorator_list . ,decorators)
        (returns #f))
             (cond
-                [(and (equal? argtype-list (list #f)) (equal? returns #f))
+                [(and (or (equal? argtype-list '()) (equal? (car argtype-list) #f) ) 
+			(equal? returns #f) 
+			(or (equal? kwargstype-list '()) (equal? (car kwargstype-list) #f))
+			(or (equal? kwonlyargstype-list '()) (equal? (car kwonlyargstype-list) #f))
+			(or (equal? varargtype-list '()) (equal? (car varargtype-list) #f)))
                 `(Assign
                 (targets (Attribute (Name ,id) __annotations__))
                 (value (Dict (keys) (values))))]
-                [(equal? argtype-list (list #f))
-                `(Assign
-               (targets (Attribute (Name ,id) __annotations__))
-                (value (Dict (keys (Str "return")) (values ,(if (> 1 (length returns-list)) `(Tuple returns-list) returns-list)))))]
-                [(equal? returns (list #f))
-                `(Assign
-                (targets (Attribute (Name ,id) __annotations__))
-                (value (Dict (keys ,@(map (lambda (x)
-                                                `(Str ,(symbol->string x))) (reverse args-list))) (values ,@(reverse argtype-list)))))]
-                [`(Assign
-                (targets (Attribute (Name ,id) __annotations__))
-                (value (Dict (keys (Str "return") ,@(map (lambda (x)
-                                                `(Str ,(symbol->string x))) (reverse args-list)))
-                                (values ,(if (> 1 (length returns-list)) `(Tuple returns-list) returns-list) ,@(reverse argtype-list)))))]))]
-
+		[(begin
+			(map build-dict! `(return) (list returns-list)) 
+			(cond [(not (equal? varargtype-list '())) (map build-dict! (list vararg-list) varargtype-list)])
+			(cond [(not (equal? kwargstype-list '())) (map build-dict! (list kwargs-list) kwargstype-list)])
+			(map build-dict! (reverse kwonlyargs-list) (reverse kwonlyargstype-list))
+			(map build-dict! (reverse args-list) (reverse argtype-list))
+			`(Assign
+                	 (targets (Attribute (Name ,id) __annotations__))
+                	 (value (Dict (keys ,@(remove-duplicates key-list)) (values ,@value-list))))
+				)]))]
+			
+                
     [else (list stmt)]))
        
  
@@ -242,8 +263,16 @@
 (define ind -1)
 (define (ind-set)
 (set! ind (+ 1 ind)) ind)
+(define l 0)
+(define (set-neg-ind l) 
+	(begin
+	(set! ind (* (- l ind) -1))
+	ind))
 
+(define sliced 0)
 (define (flatten-assign stmt)
+  (begin
+  (set! ind -1) 
   (match stmt
     [`(Assign (targets (Name ,id)) (value ,expr))
      (list stmt)]
@@ -259,7 +288,16 @@
                         (starargs #f)
                         (kwargs #f))))
          ,@(map (lambda (x)
-                `(Assign (targets ,x) (value (Subscript (Name _tmp_3) (Index (Num ,(ind-set)))))))
+		(cond
+		[(equal? (car x) 'Starred)
+				;(begin 
+				`(Assign (targets ,@(cdr x)) (value (Subscript (Name _tmp_3) (Slice (Num ,(ind-set)) (Num ,(+ 1 (set-neg-ind (length exprs)))) #f))))]
+				
+		;[(equal? sliced 1) 
+		;		(begin
+		;		`(Assign (targets ,x) (value (Subscript (Name _tmp_3) (Index (Num ,neg-ind)))))
+		;		(set! neg-ind (- neg-ind -1)))]
+                [`(Assign (targets ,x) (value (Subscript (Name _tmp_3) (Index (Num ,(ind-set))))))]))
                 exprs))]
 
     [`(Assign (targets ,t1 ,t2 . ,ts) (value ,expr))
@@ -271,7 +309,7 @@
                 `(Assign (targets ,x) (value (Name _tmp_3))))
                 (if (equal? ts '()) (list t1 t2) `(,t1 ,t2 ,@ts))))]
 
-    [else (list stmt)]))
+    [else (list stmt)])))
 
 
 
