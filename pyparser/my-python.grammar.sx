@@ -1,0 +1,643 @@
+        ; Anil Kumar Konasale krishna
+        ;   akumarkk@cs.utah.edu 
+        ;       UID - u0939372
+
+        ; Sahana Sandeep
+        ;   sahana@cs.utah.edu
+        ;       UID - u0932424
+
+
+((single_input (or 'NEWLINE simple_stmt (seq compound_stmt 'NEWLINE)))
+ 
+(file_input ($-->   (seq (rep (or 'NEWLINE stmt)) 'ENDMARKER)
+                    `(Module, @($ 1))))
+
+ (eval_input (seq testlist (rep 'NEWLINE) 'ENDMARKER))
+
+ (decorator ($--> (seq "@" dotted_name (opt ($--> (seq "(" (opt arglist) ")")
+                                                 (if ($ 2)
+                                                  ($ 2)
+                                                  (list `(args) `(keywords) (list 'starargs #f) (list 'kwargs #f)))))
+                                                  ;(cons (list 'args) (list 'keywords) (list 'starargs #f) (list 'kwargs #f)))))
+                                                 'NEWLINE)
+                  (begin
+                    (display "Populating decorators...")
+                    (newline)
+                    (display ($ 1))
+                    (newline)
+                    (newline)
+                    (display `(Name ,($ 2)))
+                    (newline)
+                    (display ($ 3))
+                    (newline)
+                    (newline)
+                    ;(display "PROCESSED ARGUMENTS:")
+                    ;(display (process-arguments-only ($ 3)))
+                    (newline)
+                    (display "---END---")
+                    (newline)
+                    (if ($ 3)
+                      (begin
+                        (display "FINAL_DECORATORS - ")
+                        (display `(Call (func (Name ,($ 2))) ,@($ 3)))
+                        (newline)
+                        `(Call (func (Name ,($ 2))) ,@($ 3)))
+                    `(Name ,($ 2))))))
+
+
+ (decorators ($--> (rep+ decorator)
+                   (begin
+                     (display "Hit DECORATORS ...")
+                     (newline)
+                   (cons 'decorator_list $$))))
+
+ (decorated (seq decorators (or classdef funcdef)))
+ (funcdef (seq "def" 'NAME parameters (opt (seq "->" test)) ":" suite))
+ (parameters (seq "(" (opt typedargslist) ")"))
+ (typedargslist
+  (or (seq
+       tfpdef
+       (opt (seq "=" test))
+       (rep (seq "," tfpdef (opt (seq "=" test))))
+       (opt
+        (seq
+         ","
+         (opt
+          (or (seq
+               "*"
+               (opt tfpdef)
+               (rep (seq "," tfpdef (opt (seq "=" test))))
+               (opt (seq "," "**" tfpdef)))
+              (seq "**" tfpdef))))))
+      (seq
+       "*"
+       (opt tfpdef)
+       (rep (seq "," tfpdef (opt (seq "=" test))))
+       (opt (seq "," "**" tfpdef)))
+      (seq "**" tfpdef)))
+ (tfpdef (seq 'NAME (opt (seq ":" test))))
+ (varargslist
+  (or (seq
+       vfpdef
+       (opt (seq "=" test))
+       (rep (seq "," vfpdef (opt (seq "=" test))))
+       (opt
+        (seq
+         ","
+         (opt
+          (or (seq
+               "*"
+               (opt vfpdef)
+               (rep (seq "," vfpdef (opt (seq "=" test))))
+               (opt (seq "," "**" vfpdef)))
+              (seq "**" vfpdef))))))
+      (seq
+       "*"
+       (opt vfpdef)
+       (rep (seq "," vfpdef (opt (seq "=" test))))
+       (opt (seq "," "**" vfpdef)))
+      (seq "**" vfpdef)))
+ (vfpdef 'NAME)
+
+ (stmt ($-->    (or simple_stmt compound_stmt)
+                $$))
+ 
+ (simple_stmt ($--> (seq small_stmt (rep (seq ";" small_stmt)
+                                               ) (opt ";") 'NEWLINE)
+                    (cond
+                        [(equal? (map second ($ 2)) '()) ($ 1)]
+                        [(cons ($ 1) (map second ($ 2)))])))
+
+ (small_stmt
+    (or expr_stmt
+          del_stmt
+          pass_stmt
+          flow_stmt
+          import_stmt
+          global_stmt
+          nonlocal_stmt
+          assert_stmt))
+    
+ (expr_stmt
+  ($--> (seq
+   testlist_star_expr
+   (or ($--> (seq augassign (or yield_expr testlist)) (list ($ 1) ($ 2)))
+       (rep ($--> (seq "=" (or yield_expr testlist_star_expr)) (list ($ 1) ($ 2))))))
+        (begin
+        (cond
+        [(equal? ($ 2) '()) `(Expr, ($ 1))]
+        [(process-augassign ($ 1) ($ 2))]))))
+
+ (testlist_star_expr
+  ($--> (seq (or test star_expr) (rep (car #'("," #,(or test star_expr)))) (opt ","))
+        (cond
+        [(equal? ($ 2) '()) (if ($ 3) `(Tuple, ($ 1)) ($ 1))]
+        [`(Tuple, @(process-testlist (list ($ 1)) ($ 2)))])))
+ (augassign
+  (or ($--> "+="
+      "-="
+       "*="
+      "/="
+      "%="
+      "&="
+      "|="
+      "^="
+      "<<="
+      ">>="
+      "**="
+      "//=" $$)))
+ (del_stmt ($--> (seq "del" exprlist)
+                 `(Delete, ($ 2))))
+
+
+ (pass_stmt ($--> "pass"
+                  `(Pass)))
+
+ (flow_stmt (or break_stmt continue_stmt return_stmt raise_stmt yield_stmt))
+
+ (break_stmt ($--> "break"
+                    `(Break)))
+
+ (continue_stmt ($--> "continue"
+                      `(Continue)))
+
+
+ (return_stmt ($-->  (seq "return"  (opt testlist))
+                      (if ($ 2)
+                          `(Return, ($ 2))
+                      `(Return))))
+
+ 
+(yield_stmt yield_expr)
+
+
+ (raise_stmt ($--> (seq "raise" (opt ($-->   (seq test (opt ($--> (seq "from" test)
+                                                             ($ 2))))
+                                            (if ($ 2)
+                                                `(,($ 1), ($ 2))
+                                             ($ 1)))))
+                  (if ($ 2)
+                    `(Raise, ($ 2))
+                    `(Raise))))
+
+
+ (import_stmt ($--> (seq (or import_name import_from))
+                    ($ 1)))
+
+
+ (import_name ($--> (seq "import" dotted_as_names)
+                    `(Import, ($ 2))))
+
+ (import_from
+  ($--> (seq
+        "from"
+        (or ($-->  (seq (rep (or "." "...")) dotted_name) 
+                    ;This is an indepedent component. So it has to be reduced first.
+                   (list ($ 1) `(module, ($ 2))))
+            ($--> (rep+ (or "." "..."))
+                 `(, $$, `(module, #f))))
+
+        "import"
+        (or ($--> "*" 
+                  `(names, `(, (string->symbol $$), #f )))
+            
+            ($-->  (seq "(" import_as_names ")")
+                   ($ 2))
+ 
+            import_as_names))
+    `(Importfrom, (car (cdr ($ 2))),  ($ 4), `(level, (process-level (car ($ 2)))))))
+                  
+
+                    ;(if ($ 2)
+                    ;   `(names, `($ 2), #f) 
+                  ;`(names, (string->symbol ($ 1)), #f ))))
+    ;`(Importfrom, (car (cdr ($ 2))), ($ 4), `(level, (process-level (car ($ 2))))))))
+
+
+
+ (import_as_name ($-->  (seq 'NAME (opt ($--> (seq "as" 'NAME)
+                                               (string->symbol ($ 2)))))
+                        (cond
+                            [(equal? ($ 2) #f) ($ 1)]
+
+                            [(if ($ 2)
+                                `(, (string->symbol ($ 1)), ($ 2))
+                            (string->symbol ($ 1)))])))
+
+ (dotted_as_name ($-->  (seq dotted_name (opt ($--> (seq "as" 'NAME)
+                                             (string->symbol ($ 2)))))
+                        (cond
+                            [(equal? ($ 2) #f) ($ 1)]
+
+                            [(if ($ 2)
+                                `(, ($ 1), ($ 2))
+                            ($ 1))])))
+
+
+
+
+ (import_as_names
+  ($--> (seq import_as_name (rep (seq "," import_as_name)) (opt ","))
+        `(names, (process-dotted-names (list ($ 1)) ($ 2)))))
+
+
+(dotted_as_names ($--> (seq dotted_as_name (rep (seq "," dotted_as_name)))
+                       ;(begin
+                        ;    (display "Invoking dotted_as_names")
+                        ;    (newline)
+                             (process-dotted-names (list ($ 1)) ($ 2))))
+                            ;`(, @(process-dotted-names (list ($ 1)) ($ 2)))))
+
+
+ (dotted_name ($-->  (seq 'NAME (rep (seq "." 'NAME)))
+                        (begin
+                            ;(display "Invoking dotted_name")
+                            ;(newline)
+                        `( ,@(process-dots ($ 1) ($ 2))))))
+                    ;    (string->symbol (string-append ($ 1) ($ 2))))))
+                    ;`(, @(process-dotted (list (string->symbol ($ 1))) ($ 2)))))
+
+ (global_stmt  ($--> (seq "global" 'NAME (rep (seq "," 'NAME)))
+                     `(Global ,@(process-globals (list (string->symbol ($ 2))) ($ 3)))))
+
+
+ (nonlocal_stmt ($--> (seq "nonlocal" 'NAME (rep (seq "," 'NAME)))
+                     `(Nonlocal ,@(process-globals (list (string->symbol ($ 2))) ($ 3)))))
+
+
+
+
+
+
+ (assert_stmt ($-->   (seq "assert" test  (opt ($--> (seq "," test)
+                                                     ($ 2))))
+                         (if ($ 3)
+                            `(Assert, ($ 2), ($ 3))
+                        `(Assert, ($ 2)))))
+
+ (compound_stmt
+  (or if_stmt
+      while_stmt
+      for_stmt
+      try_stmt
+      with_stmt
+      funcdef
+      classdef
+      decorated))
+
+
+
+ (if_stmt
+  ($--> (seq
+        "if"
+        test
+        ":"
+        suite
+        ($--> (rep (seq "elif" test ":" suite))
+              $$)
+              ;`(, ($ 2), ($ 4))))
+        (opt ($-->  (seq "else" ":" suite)
+                    ($ 3))))
+   `(If, `(test, ($ 2)), `(body ,@($ 4)), `(orelse, @(process-if-ladder ($ 5) ($ 6))))))
+
+
+;TODO  - There is an entanglement of suite in else's suite. I suspect it to be a bug with suite.
+ (while_stmt ($-->  (seq "while" test ":" suite (opt ($--> (seq "else" ":" suite)
+                                                           ($ 3))))
+                    (if ($ 5)
+                        `(While, `(test, ($ 2)), `(body ,@($ 4)), `(orelse, @($ 5)))
+                      `(While, `(test, ($ 2)), `(body ,@($ 4)), `(orelse)))))
+
+ (for_stmt
+  ($--> (seq "for" exprlist "in" testlist ":" suite (opt ($-->    (seq "else" ":" suite)
+                                                                  ($ 3))))
+        (if ($ 7)
+             `(For, `(target, ($ 2)), `(iter, ($ 4)), `(body ,@($ 6)), `(orelse, @($ 7)))
+         `(For, `(target, ($ 2)), `(iter, ($ 4)), `(body ,@($ 6)), `(orelse))))) 
+
+(try_stmt
+  ($--> (seq
+        "try"
+        ":"
+        suite
+        (or ($-->   (seq
+                        (rep+ ($-->   (seq except_clause ":" suite)
+                                      ($ 3)))
+                        (opt ($-->  (seq "else" ":" suite)
+                                    ($ 3)))
+                        (opt ($-->  (seq "finally" ":" suite)
+                                    ($ 3))))
+                    (if ($ 2)
+                        (if ($ 3)
+                            `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody, ($ 3)))
+                        `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody)))
+                     (if ($ 3)
+                            `(, `(handlers, ($ 1)), `(orelse), `(finalbody, ($ 3)))
+                          `(, (cons 'handlers ($ 1)), `(orelse), `(finalbody))))))
+
+
+                        ($-->   (seq "finally" ":" suite)
+                                `(, `(handlers), `(orelse), `(finalbody, ($ 3)))))
+
+        `(Try, `(body, @($ 3)),($ 4))))
+ 
+
+                    ;`(, (cons 'handlers ($ 1)), (cons 'orelse (if ($ 2) ($ 2) '())), (cons 'finalbody (if ($ 3) ($ 3) '())))))
+                    ;(if ($ 2)
+                    ;    (if ($ 3)
+                    ;        `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody, ($ 3)))
+                    ;    `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody)))
+                    ; (if ($ 3)
+                    ;        `(, `(handlers, ($ 1)), `(orelse), `(finalbody, ($ 3)))
+                    ;      `(, (cons 'handlers ($ 1)), `(orelse), `(finalbody))))))
+                        ; (`(handlers, ($ 1)), `(orelse), `(finalbody) )))))
+
+
+
+ (with_stmt (seq "with" with_item (rep (seq "," with_item)) ":" suite))
+ (with_item (seq test (opt (seq "as" expr))))
+ 
+ (except_clause ($-->   (seq "except" (opt ($-->    (seq test (opt ($--> (seq "as" 'NAME)
+                                                                    (string->symbol ($ 2)))))
+                                                    (if ($ 2)
+                                                        `(, ($ 1), ($ 2))
+                                                     `($ 1)))))
+                        (if ($ 2)
+                            `(except, ($ 2))
+                         ;(list 'except #f #f))))
+                         `(except, #f, #f))))
+
+
+ (suite (or simple_stmt ($--> (seq 'NEWLINE 'INDENT (rep+ stmt) 'DEDENT) ($ 3))))
+ 
+
+ (test (or ($--> (seq or_test (opt #'("if" #,or_test "else" #,test)))
+		 (cond 
+			[(equal? ($ 2) #f) ($ 1)]
+			[`(IfExp, (car ($ 2)), ($ 1), @(cdr ($ 2)))])) 
+	   lambdef))
+ (test_nocond (or or_test lambdef_nocond))
+ (lambdef (seq "lambda" (opt varargslist) ":" test))
+ (lambdef_nocond (seq "lambda" (opt varargslist) ":" test_nocond))
+ (or_test ($--> (seq and_test (rep (car #'("or" #,and_test))))
+		(cond [(equal? ($ 2) '()) ($ 1)]
+		      [`(BoolOp Or, ($ 1), @($ 2))])))
+ (and_test ($--> (seq not_test (rep (car #'("and" #,not_test)))) 
+		 (cond [(equal? ($ 2) '()) ($ 1)]
+		       [`(BoolOp And, ($ 1), @($ 2))])))
+ (not_test (or ($--> (seq "not" not_test) 
+	             (process-unops ($ 1) ($ 2))) comparison))
+ (comparison ($--> (seq expr (rep (seq comp_op expr))) 
+		   (cond
+		    [(equal? ($ 2) '()) ($ 1)]
+		    [`(Compare , `(left, ($ 1)), @(process-compops '() ($ 2)))])))
+ (comp_op
+  (or ($--> "<" `Lt)
+      ($--> ">" `Gt)
+      ($--> "==" `Eq)
+      ($--> ">=" `GtE)
+      ($--> "<=" `LtE)
+      ($--> "<>" `NotEq)
+      ($--> "!=" `NotEq)
+      ($--> "in" `In)
+      ($--> (seq "not" "in") `NotIn)
+      ($--> "is" `Is)
+      ($--> (seq "is" "not") `IsNot)))
+ (star_expr ($--> (seq "*" expr)
+		  `(Starred, ($ 2))))
+ (expr ($--> (seq xor_expr (rep (seq "|" xor_expr)))
+	     (process-binops ($ 1) ($ 2))))
+ (xor_expr ($--> (seq and_expr (rep (seq "^" and_expr)))
+		 (process-binops ($ 1) ($ 2))))
+ (and_expr ($--> (seq shift_expr (rep (seq "&" shift_expr))) 
+		 (process-binops ($ 1) ($ 2))))
+ (shift_expr ($--> (seq arith_expr (rep (seq (or "<<" ">>") arith_expr)))
+	           (process-binops ($ 1) ($ 2))))
+ (arith_expr ($--> (seq term (rep (seq (or "+" "-") term))) 
+		   (process-binops ($ 1) ($ 2))))
+ (term ($--> (seq factor (rep (seq (or "*" "/" "%" "//") factor)))
+	     (process-binops ($ 1) ($ 2))))
+
+ (factor (or ($--> (seq (or "+" "-" "~") factor) (process-unops ($ 1) ($ 2))) power))
+
+ ; Example reduction for power:
+ ; Note: process-trailers is defined in pyparse-prefix.rkt
+ ; It's stubbed out at the moment so it won't handle programs 
+ ; that attempt to do function call, array indexing or field 
+ ; reference.
+ (power ($--> (seq atom (rep trailer) (opt ($--> (seq "**" factor) ($ 2))))
+              (if ($ 3)                 
+                 `(BinOp ,(process-trailers ($ 1) ($ 2)) Pow ,($ 3))
+                  (process-trailers ($ 1) ($ 2)))))
+ (atom
+  (or (seq "(" (opt (or yield_expr testlist_comp)) ")")
+      (seq "[" (opt testlist_comp) "]")
+      (seq "{" (opt dictorsetmaker) "}")
+
+      ($--> (seq 'NAME) `(Name ,(string->symbol ($ 1))))
+      
+      ; Example reduction:
+      ($--> (seq 'NUMBER) `(Num ,($ 1)))
+
+      ; Example reduction:
+      ($--> (seq (rep+ 'STRING)) `(Str ,(apply string-append ($ 1))))
+      ; WARNING: Watch for byte strings with: bytes?
+
+      ($--> "..." `(Ellipsis))
+      ($--> "None" `(NameConstant None))
+      ($--> "True" `(NameConstant True))
+      ($--> "False" `(NameConstant False))))
+
+ (testlist_comp
+  ($--> 
+  (seq
+   (or test star_expr)
+   (or comp_for ($--> (seq (rep ($--> (seq "," (or test star_expr)) ($ 2))) (opt ",")) (cons ($ 1) ($ 2)))))
+    (cond
+    [(equal? (car ($ 2)) '()) `(List, ($ 2))])))
+
+ (trailer
+  (or (seq "(" (opt arglist) ")")
+      ($--> (seq "[" subscriptlist "]")
+		(cons ($ 1) ($ 2)))
+      (seq "." 'NAME)))
+ (subscriptlist ($--> (seq subscript (rep ($--> (seq "," subscript) ($ 2))) (opt ","))
+			(cond
+			[(equal? ($ 2) '()) (cond
+						[(not (equal? ($ 3) #f)) (if (equal? (car ($ 1)) 'Slice) `(ExtSlice, ($ 1))
+													 `(Index, `(Tuple, ($ 1))))]
+						[(equal? (car ($ 1)) 'Slice) ($ 1)]
+						[`(Index, ($ 1))])]
+			[(equal? (car (car ($ 2))) 'Slice) 
+			  (if (equal? (car ($ 1)) 'Slice)`(ExtSlice, ($ 1), @($ 2)) 
+					`(ExtSlice, `(Index, ($ 1)), @($ 2)))]
+			[(equal? (car ($ 1)) 'Slice) `(ExtSlice,($ 1))]
+			[`(Index, `(Tuple, ($ 1), @($ 2)))])))
+
+ (subscript (or test 
+		($--> (seq (opt test) ":" (opt test) (opt sliceop)) `(Slice, ($ 1), ($ 3), ($ 4)))))
+ (sliceop ($--> (seq ":" (opt test)) ($ 2)))
+
+
+ (exprlist
+  ($--> (seq (or expr star_expr) (rep (car #'("," #,(or expr star_expr)))) (opt ","))
+        (begin
+        (cond
+        [(equal? ($ 2) '()) (if ($ 3) `(Tuple, ($ 1)) ($ 1))]
+        [`(Tuple, @(process-testlist (list ($ 1)) ($ 2)))]))))
+
+
+ (testlist ($--> (seq test (rep (car #'("," #,test))) (opt ","))
+                 (begin
+                 (cond
+                 [(equal? ($ 2) '()) (if ($ 3) `(Tuple, ($ 1)) ($ 1))]
+                 [`(Tuple, @(process-testlist (list ($ 1)) ($ 2)))]))))
+
+ (dictorsetmaker
+  (or (seq
+       test
+       ":"
+       test
+       (or comp_for (seq (rep (seq "," test ":" test)) (opt ","))))
+      (seq test (or comp_for (seq (rep (seq "," test)) (opt ","))))))
+
+
+ (classdef (seq "class" 'NAME (opt (seq "(" (opt arglist) ")")) ":" suite))
+
+ ; Idea here is that -
+ ;      o As and when we encounter args, starargs, keywords, kwargs, Construct them.
+ ;      o Make a list of all the arguments of same type and process them in a global function
+ ;
+ (arglist
+  ($-->
+  (seq
+   (rep ($-->   (seq argument ",")
+                ($ 1)))
+
+   (or ($-->    (seq argument (opt ","))
+                (begin
+                  (newline)
+                  (display "Seq of arguments")
+                  (newline)
+                  (display ($ 1))
+                  ($ 1)))
+                  ;(list 'args ($ 1))))
+                ;(append (list 'args ($ 1)) (list 'starargs #f) (list 'kwargs #f))))
+       ($-->    (seq "*" test      (rep ($-->    (seq "," argument)
+                                                  ($ 2))) 
+                                   (opt ($-->   (seq "," "**" test)
+                                                (list 'kwargs ($ 3)))))
+                (if ($ 4)
+                  (begin
+                    (newline)
+                    (display "4th arg is present")
+                    (newline)
+                    (display "3_ARG__")
+                    (display ($ 3))
+                    (newline)
+                    (display "4_ARG__")
+                    (display ($ 4))
+                    (newline)
+
+                    (if ($ 3)
+                      (begin
+                        (display "3rd argument is present")
+                        (newline)
+                        (display "2_ARG__")
+                        (display ($ 2))
+                        (newline)
+                        (display "ONE-")
+                        (display (list 'starargs ($ 2)))
+                        (newline)
+                        (display "SECOND-")
+                        (display ($ 4))
+                        (newline)
+                        (display "COMBINING starargs and kwargs:")
+                        (display  (list (list 'starargs ($ 2))  ($ 4)))
+                        (newline)
+
+                        (list   (list 'starargs ($ 2)) (if (not (empty? (process-dotted-names '() ($ 3)))) 
+                                                         (append (list 'args) (process-dotted-names '() ($ 3)) ($ 4))
+                                                          ($ 4))))
+                        (begin
+                          (display "3rd argument is absent")
+                          (newline)
+                          (display "2_ARG__")
+                          (display ($ 2))
+                          (newline)
+                          (display (cons (list 'starargs ($ 2)) ($ 4)))
+                          (cons (list 'starargs ($ 2)) ($ 4)))))
+                  (begin
+                    (newline)
+                    (display "4th arg is Absent")
+                    (newline)
+                    (display "3_ARG__")
+                    (display ($ 3))
+                    (newline)
+                    (display "4_ARG__")
+                    (display ($ 4))
+                    (newline)
+
+                    (if ($ 3)
+                      (append (list 'starargs ($ 2)) (if (not (empty? (process-dotted-names '() ($ 3))))
+                                                        (append (list 'args) (process-dotted-names '() ($ 3)))
+                                                        '()))
+                      (append (list 'starargs ($ 2)) (list 'kwargs #f))))))
+
+       ($-->    (seq "**" test)
+                (list 'kwargs ($ 2)))))
+  (begin
+    (display "Populating final arglist")
+    (newline)
+    (display ($ 1))
+    (newline)
+    (display "Second argument - ")
+    (display ($ 2))
+    (newline)
+  (if ($ 1)
+    (process-all-args (append ($ 1) (list ($ 2))))
+    (process-all-args ($ 2))))))
+
+
+ ; To fix this  (args (keywords (y0 (Num 200)))),
+ ;      prefix arguments with "args" in argument grammer
+ ;
+ (argument (or ($--> (seq test (opt comp_for))
+                     (begin
+                       (display "Argument generation...")
+                       (newline)
+                     (if ($ 2)
+                       (list 'args (cons (list 'GeneratorExp) (cons ($ 1) ($ 2))))
+                       (list 'args ($ 1)))))
+               ($--> (seq test "=" test)
+                     (begin
+                       (display "Populating keywords.........")
+                       (newline)
+                       (display ($ 1))
+                       (newline)
+                       (display ($ 2))
+                       (newline)
+                       (display "RESULT = ")
+                       ;(display (append ($ 1) ($ 3)))
+                       (display (list (car (cdr ($ 1))) ($ 3)))
+                       (newline)
+                       (list 'keywords (list (car (cdr ($ 1))) ($ 3)))))))
+                       ;(append ($ 1) ($ 3))))))
+ 
+ (comp_iter (or comp_for comp_if))
+ (comp_for ($--> (seq "for" exprlist "in" or_test (opt comp_iter))
+		 (cond
+			[(equal? ($ 5) '()) `(for, ($ 2) in, ($ 4) if)]
+			[`(for, ($ 2) in, ($ 4), ($ 5) if)])))
+ (comp_if ($--> (seq "if" test_nocond (opt comp_iter))
+		(cond
+		[(equal? ($ 3) '()) ($ 2)]
+		[(cons ($ 2) ($ 3))])))
+ (encoding_decl 'NAME)
+ (yield_expr ($--> (seq "yield" (opt yield_arg))
+                   (cond
+                       [(equal? ($ 2) '()) `(Yield)]
+                       [($ 2)])))
+ (yield_arg (or ($--> (seq "from" test) `(YieldFrom, ($ 2)))
+               ($--> testlist `(Yield, $$)))))
+                                                  
