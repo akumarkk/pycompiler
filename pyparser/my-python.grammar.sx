@@ -502,7 +502,27 @@
       (seq test (or comp_for (seq (rep (seq "," test)) (opt ","))))))
 
 
- (classdef (seq "class" 'NAME (opt (seq "(" (opt arglist) ")")) ":" suite))
+ (classdef ($--> (seq "class" 'NAME (opt ($--> (seq "(" (opt arglist) ")")
+                                               ($ 2)))
+                                     ":" suite)
+                (begin
+                  (display "In ClassDef")
+                  (newline)
+                 (if ($ 3)
+                    (append (cons 'ClassDef 
+                               (cons `(name, (string->symbol ($ 2))) 
+                                     (cons (cons 'bases (cdr (cadr ($ 3)))) 
+                                           (cdr (cdr ($ 3)))))) 
+                            (list (cons 'body ($ 5))) 
+                            (list `(decorator_list)))
+             `(ClassDef, 
+                `(name, (string->symbol ($ 2))), 
+                `(bases), 
+                `(keywords), 
+                `(starargs, #f), 
+                `(kwargs, #f), 
+                (cons 'body ($ 5)), 
+                `(decorator_list))))))
 
  ; Idea here is that -
  ;      o As and when we encounter args, starargs, keywords, kwargs, Construct them.
@@ -555,10 +575,27 @@
                         (display "COMBINING starargs and kwargs:")
                         (display  (list (list 'starargs ($ 2))  ($ 4)))
                         (newline)
+                        
+                        (if (not (empty? ($ 3)))
+                          (if (not (empty? ($ 4)))
+                            (begin
+                              (display "ALL_ARGS are present - ")
+                              ;(display (append (cons (list 'starargs ($ 2))  ($ 3)) (list ($ 4))))
+                              ;(display (append (list (list 'starargs ($ 2))  ($ 3) ($ 4))))
+                              (display (list (cons (list 'starargs ($ 2))  ($ 3)) ($ 4)))
+                              (newline)
+                              ;(append (cons (list 'starargs ($ 2))  ($ 3)) (list ($ 4))))
+                              (list (cons (list 'starargs ($ 2))  ($ 3)) ($ 4)))
+                            (cons (list 'starargs ($ 2))  ($ 3)))
+                          (begin
+                            (display "No ARGLIST : ")
+                            (display (list (list 'starargs ($ 2))   ($ 4)))
+                            (newline)
+                            (if (not (empty? ($ 4)))
+                              ;cons of list has not worked here
+                                (list (list 'starargs ($ 2))   ($ 4))
+                                (list 'starargs ($ 2))))))
 
-                        (list   (list 'starargs ($ 2)) (if (not (empty? (process-dotted-names '() ($ 3)))) 
-                                                         (append (list 'args) (process-dotted-names '() ($ 3)) ($ 4))
-                                                          ($ 4))))
                         (begin
                           (display "3rd argument is absent")
                           (newline)
@@ -579,10 +616,28 @@
                     (newline)
 
                     (if ($ 3)
-                      (append (list 'starargs ($ 2)) (if (not (empty? (process-dotted-names '() ($ 3))))
-                                                        (append (list 'args) (process-dotted-names '() ($ 3)))
-                                                        '()))
-                      (append (list 'starargs ($ 2)) (list 'kwargs #f))))))
+                      (begin 
+                        (display "ONE[STAR] - ")
+                        (display (list 'starargs ($ 2)))
+                        (newline)
+                        (display "TWO[ARG] - ")
+                        (display ($ 3))
+                        (newline)
+                        (display "THREE[KWARG] - ")
+                        (display ($ 4))
+                        (newline)
+                        (display "ARG_3 COMPOSED DATA :")
+                        (display (list (list (list 'starargs ($ 2))) (if (not (empty? ($ 3))) ($ 3) (void))))
+                        (newline)
+                        (if (not (empty? ($ 3)))
+                          (cons (list 'starargs ($ 2))  ($ 3))
+                          (list 'starargs ($ 2))))
+
+                      ;(append (list 'starargs ($ 2)) (if (not (empty? (process-dotted-names '() ($ 3))))
+                      ;                                  (append (list 'args) (process-dotted-names '() ($ 3)))
+                      ;                                  '()))
+                      ;(append (list 'starargs ($ 2)) (list (list 'kwargs #f)))))))
+                      (list 'starargs ($ 2))))))
 
        ($-->    (seq "**" test)
                 (list 'kwargs ($ 2)))))
@@ -595,8 +650,15 @@
     (display ($ 2))
     (newline)
   (if ($ 1)
-    (process-all-args (append ($ 1) (list ($ 2))))
-    (process-all-args ($ 2))))))
+    (begin 
+      (display "ARG_1_ is present: ")
+      (display ($ 1))
+      (newline)
+      (process-all-args (append ($ 1) (list ($ 2)))))
+    (begin
+      (display "ARG_1 is absent: ")
+      (display ($ 2))
+      (process-all-args ($ 2)))))))
 
 
  ; To fix this  (args (keywords (y0 (Num 200)))),

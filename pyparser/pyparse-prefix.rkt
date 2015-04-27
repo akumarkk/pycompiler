@@ -205,6 +205,39 @@ base]
 (define keywords_base '())
 (define final_list '())
 
+(define do-reset 1)
+
+; TODO - May be there could be more elegant way to do this.
+; But at this point, this seems to be better to my tired mind :)
+(define (reset-all-variables flag)
+  (if (= flag 1)
+    (begin
+      (set! arg_base '())
+      (set! starargs_base '())
+      (set! kwargs_base '())
+      (set! keywords_base '()))
+    (void)))
+
+; As all the variables used here are global, expression that matches last 
+; case is expected have only one expression not many subexpression.
+;
+; Example :
+;   For this case
+;   ((((starargs (Name arg_star)) (args (Name var_1))) (kwargs (Name kw_args))))
+;   
+;   NAME = ((starargs (Name arg_star)) (args (Name var_1)))
+;   VAR  = (kwargs (Name kw_args))
+;   REST = ()
+;
+;   This again invokes the function recursively with :
+;   (((starargs (Name arg_star)) (args (Name var_1))))
+;
+;   NAME = (starargs (Name arg_star))
+;   VAR  = (args (Name var_1))
+;   REST =  ()
+;
+;   *** This results in resetting all the global variables ***
+
 (define (process-all-args arglist)
   (display "===========   START process-all-arglist =============")
   (newline)
@@ -237,8 +270,6 @@ base]
                     ;(cons (list 'args) arg_base)
                     (append (list 'keywords) keywords_base)
 
-                    ;(append (list 'starargs starargs_base))
-
                     ;(append (list 'kwargs kwargs_base))))
 
                     (list 'starargs (if (empty? starargs_base)
@@ -248,10 +279,14 @@ base]
                                       #f
                                       kwargs_base))))
             ; Reset everything
-            (set! arg_base '())
-            (set! starargs_base '())
-            (set! kwargs_base '())
-            (set! keywords_base '())
+            (if (= do-reset 1)
+              (begin
+                (set! arg_base '())
+                (set! starargs_base '())
+                (set! kwargs_base '())
+                (set! keywords_base '()))
+              (void))
+
             (display "FINAL_LIST - ")
             (display final_list)
             (newline)
@@ -293,12 +328,52 @@ base]
             (newline)
             (set! keywords_base (append keywords_base (list var)))
             (process-all-args rest))]
-        
+       
+         ; This rule should be matched only once per list.
+         ; Later it should resolve the call to other lists
+         ;
          [(cons (list name var) rest)
           (begin
             (display "^^^^^^^ Matched cons of list ^^^^^^^^^^^")
             (newline)
-          arglist)]))
+            (display "NAME ^")
+            (display name)
+            (newline)
+            (display "VAR ^ ")
+            (display var)
+            (newline)
+            (display "REST ^ ")
+            (display rest)
+            (newline)
+            (set! do-reset 0)
+
+            (match (list name)
+                   [(cons (list sub-name sub-var) sub-rest)
+                    (begin
+                      (display "Matched sub-expression")
+                      (newline)
+                      (if (or (eq? sub-name 'args)
+                              (eq? sub-name 'starargs)
+                              (eq? sub-name 'keywords)
+                              (eq? sub-name 'kwargs))
+                        (process-all-args (list name))
+                        (begin
+                          (process-all-args (list sub-name))
+                          (process-all-args (list sub-var)))))]
+
+
+                   [else 
+                     (process-all-args (list name))])
+
+
+            ;(process-all-args (list name))
+            (process-all-args (list var))
+            (process-all-args rest)
+            (set! do-reset 1)
+            (reset-all-variables 1)
+            final_list
+          )]))
+
 
 
 (define (process-globals base variables)
@@ -450,8 +525,9 @@ arg1]
    ; You should change the start symbol as you move up the kinds
    ; of expressions.
    ;(start file_input)
-   (start decorators)
-   
+   ;(start decorators)
+   (start compound_stmt)
+
    (error (λ (tok-ok? tok-name tok-value)
             (if tok-ok?
                 (error (format "Unexpected token: ~a ~a" tok-name tok-value))
