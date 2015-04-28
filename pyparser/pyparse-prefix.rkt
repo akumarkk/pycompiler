@@ -524,9 +524,9 @@ arg1]
    ; the start symbol is set to `power` instead of `file_input`.
    ; You should change the start symbol as you move up the kinds
    ; of expressions.
-   ;(start file_input)
+   (start file_input)
    ;(start decorators)
-   (start compound_stmt)
+   ;(start compound_stmt)
 
    (error (λ (tok-ok? tok-name tok-value)
             (if tok-ok?

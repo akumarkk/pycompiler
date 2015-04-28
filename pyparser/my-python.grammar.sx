@@ -52,30 +52,106 @@
                    (cons 'decorator_list $$))))
 
  (decorated (seq decorators (or classdef funcdef)))
- (funcdef (seq "def" 'NAME parameters (opt (seq "->" test)) ":" suite))
- (parameters (seq "(" (opt typedargslist) ")"))
+
+ (funcdef ($--> (seq "def" 'NAME parameters (opt ($-->    (seq "->" test)
+                                                          ($ 2))) 
+                                            ":" suite)
+                `(FunctionDef, 
+                   `(name, (string->symbol ($ 2))), 
+                   `(args, ($ 3)), 
+                    (cons 'body ($ 6)), 
+                   `(decorator_list), 
+                    (if ($ 4) 
+                     `(returns, ($ 4))
+                     `(returns, #f)))))
+ 
+ (parameters ($-->  (seq "(" (opt typedargslist) ")")
+                    ($ 2)))
+
+ ; typedefargslist :
+ ;  o cons each arg with its default if exists and prefix that with "args"
+ ;  o Construct list of args, kwonlyargs and varargs
+ ;  o Process the list as done in arglist
+ ;
+ ;  Any parameters to function following stararg(*args) is considered to be kwonlyarg
+ ;
  (typedargslist
-  (or (seq
-       tfpdef
-       (opt (seq "=" test))
-       (rep (seq "," tfpdef (opt (seq "=" test))))
-       (opt
-        (seq
-         ","
-         (opt
-          (or (seq
+  (or 
+    ;FIRST BLOCK
+    ($--> (seq
+           tfpdef
+           (opt ($-->   (seq "=" test) 
+                        ($ 2)))
+           (rep ($-->   (seq "," tfpdef (opt ($-->  (seq "=" test) 
+                                                    ($ 2))))
+                        (begin
+                           (display "ARG_AVRS : ")
+                           (display "ONE - ")
+                           (display ($ 2))       
+                           (newline)
+                           (display "TWO - ")    (display ($ 3)) (newline)
+                           (display "Populated ARG_LIST - ")
+                           (display (list 'args (cons ($ 2) ($ 3))))
+                           (newline)
+                           (list 'args (cons ($ 2) ($ 3))))))
+                    
+           (opt
+               ($--> (seq
+                ","
+                (opt
+                (or ($--> (seq
+                             "*"
+                            (opt tfpdef)
+                            (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
+                                                                  ($ 2))))
+                                       (list 'kwonlyargs (cons ($ 1) ($ 2)))))
+                            (opt ($--> (seq "," "**" tfpdef)
+                                       (list 'kwargs ($ 2)))))
+                          (begin
+                            (display "FIRST BLOCK(4th sub-block) - ")
+                            (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                            (newline)
+                            (list (list 'vararg ($ 2)) ($ 3) ($ 4))))
+
+                    ($--> (seq "**" tfpdef)
+                          (list 'kwargs ($ 2))))))
+                     ($ 2))))
+          ;==>
+          ;
+            (begin
+                (display "processing typeargs ...")
+              (newline)
+              ))
+
+      ;SECOND BLOCK
+      ($--> (seq
                "*"
                (opt tfpdef)
-               (rep (seq "," tfpdef (opt (seq "=" test))))
-               (opt (seq "," "**" tfpdef)))
-              (seq "**" tfpdef))))))
-      (seq
-       "*"
-       (opt tfpdef)
-       (rep (seq "," tfpdef (opt (seq "=" test))))
-       (opt (seq "," "**" tfpdef)))
-      (seq "**" tfpdef)))
- (tfpdef (seq 'NAME (opt (seq ":" test))))
+               (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
+                                                     ($ 2))))
+                          (list 'kwonlyargs (cons ($ 1) ($ 2)))))
+               (opt ($--> (seq "," "**" tfpdef)
+                          (list 'kwargs ($ 2)))))
+            (begin
+              (display "procesing 2ND block")
+              (newline)
+              (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
+              (newline)
+              (list (list 'vararg ($ 2)) ($ 3) ($ 4))
+              ))
+
+      ;THIRD BLOCK
+      ($--> (seq "**" tfpdef)
+            (list 'kwargs ($ 2)))))
+
+
+
+
+ (tfpdef ($-->  (seq 'NAME (opt ($-->  (seq ":" test)
+                                       ($ 2))))
+                `(,(string->symbol ($ 1)), ($ 2))))
+
+
  (varargslist
   (or (seq
        vfpdef
@@ -515,6 +591,11 @@
                                            (cdr (cdr ($ 3)))))) 
                             (list (cons 'body ($ 5))) 
                             (list `(decorator_list)))
+                    (begin
+                      (display "ARGLIST not present") (newline)
+                      (display `(ClassDef, `(name, (string->symbol ($ 2))), `(bases), `(keywords), `(starargs, #f), `(kwargs, #f), (cons 'body ($ 5)), `(decorator_list)))
+                      (newline)
+
              `(ClassDef, 
                 `(name, (string->symbol ($ 2))), 
                 `(bases), 
@@ -522,7 +603,7 @@
                 `(starargs, #f), 
                 `(kwargs, #f), 
                 (cons 'body ($ 5)), 
-                `(decorator_list))))))
+                `(decorator_list)))))))
 
  ; Idea here is that -
  ;      o As and when we encounter args, starargs, keywords, kwargs, Construct them.
