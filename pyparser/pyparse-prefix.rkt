@@ -302,7 +302,8 @@ base]
                        (set! type_arg_base (append type_arg_base (list var))))])
 
             (display "REST : ") (display rest) (newline)
-            
+            ;(if (empty? rest)
+              ;(process-typedargs (car rest))
             (process-typedargs rest))]
          
         [(cons (list 'kwonlyargs var) rest)
@@ -343,6 +344,8 @@ base]
                        (set! type_kwonlyargs_base (append type_kwonlyargs_base (list var))))])
 
             (display "REST : ") (display rest) (newline)
+            ;(if (empty? rest)
+              ;(process-typedargs (car rest))
             (process-typedargs rest))]
 
 

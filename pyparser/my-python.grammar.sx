@@ -141,12 +141,12 @@
                                           ;
                                           (if (not (empty? ($ 3)))
                                             (if ($ 4)
-                                                (list (list 'vararg ($ 2)) ($ 3) ($ 4))
-                                                (list (list 'vararg ($ 2)) ($ 3)))
+                                                (append (list 'vararg ($ 2)) ($ 3) ($ 4))
+                                                (append (list 'vararg ($ 2)) ($ 3)))
 
                                             (if ($ 4)
-                                              (list (list 'vararg ($ 2)) ($ 4))
-                                              (list (list 'vararg ($ 2)))))
+                                              (append (list 'vararg ($ 2)) ($ 4))
+                                              (append (list 'vararg ($ 2)))))
                                           
                                           ;else ($ 2)
                                           (if (not (empty? ($ 3)))
@@ -154,9 +154,11 @@
                                               (list ($ 3) ($ 4))
                                               ($ 3))
 
+                                            ; Is this the only way to fix this ?
+                                            ; Not sure what to do when this grammer is invoked with nothing
                                             (if ($ 4)
                                               (list ($ 4))
-                                              (void))))))
+                                              (list 'vararg (cons #f #f)))))))
 
                                 ($--> (seq "**" tfpdef)
                                       (list 'kwarg ($ 2))))))
@@ -177,11 +179,11 @@
               (if ($ 4)
                 ; When ($ 4) is there
                 (if (not (empty? ($ 3)))
-                  (process-typedargs (list (if ($ 2)
-                                             (list 'args (cons ($ 1) ($ 2)))
-                                             (list 'args ($ 1)))
+                  (process-typedargs (append (if ($ 2)
+                                             (list (list 'args (cons ($ 1) ($ 2))))
+                                             (list (list 'args ($ 1))))
                                            ($ 3)
-                                           ($ 4)))
+                                           (list ($ 4))))
                   (process-typedargs (list (if ($ 2)
                                              (list 'args (cons ($ 1) ($ 2)))
                                              (list 'args ($ 1)))
@@ -236,7 +238,7 @@
 
                   (if ($ 4)
                     (process-typedargs (list ($ 4)))
-                    (void))))))
+                    (process-typedargs '()))))))
 
 
       ;THIRD BLOCK
