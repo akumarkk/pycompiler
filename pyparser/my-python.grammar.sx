@@ -212,7 +212,7 @@
                              (list 'kwonlyargs ($ 2)))))
 
                (opt ($--> (seq "," "**" tfpdef)
-                          (list 'kwarg ($ 2)))))
+                          (list 'kwarg ($ 3)))))
             
             ;==>
             ;
@@ -223,21 +223,22 @@
                 ;if ($ 2)
                 (if (not (empty? ($ 3)))
                   (if ($ 4)
-                    (process-typedargs (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
-                    (process-typedargs (list (list 'vararg ($ 2)) ($ 3))))
+                    (process-typedargs (append (list (list 'vararg ($ 2)))  ($ 3) (list ($ 4))))
+                    (process-typedargs (append (list (list 'vararg ($ 2))) ($ 3))))
 
                   (if ($ 4)
-                    (process-typedargs (list (list 'vararg ($ 2)) ($ 4)))
+                    (process-typedargs (append (list (list 'vararg ($ 2))) ($ 4)))
                     (process-typedargs (list (list 'vararg ($ 2))))))
 
                 ;ELSE ($ 2)
                 (if (not (empty? ($ 3)))
                   (if ($ 4)
-                    (process-typedargs (list ($ 3) ($ 4)))
+                    (process-typedargs (append ($ 3) ($ 4)))
+                    ;(process-typedargs (append (list ($ 3)) ($ 4)))
                     (process-typedargs ($ 3)))
 
                   (if ($ 4)
-                    (process-typedargs (list ($ 4)))
+                    (process-typedargs  ($ 4))
                     (process-typedargs '()))))))
 
 
