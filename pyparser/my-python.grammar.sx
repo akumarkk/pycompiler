@@ -117,24 +117,50 @@
                     
            (opt
                ($--> (seq
-                ","
-                (opt
-                (or ($--> (seq
-                             "*"
-                            (opt tfpdef)
-                            (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
-                                                                  ($ 2))))
-                                       (list 'kwonlyargs (cons ($ 1) ($ 2)))))
-                            (opt ($--> (seq "," "**" tfpdef)
-                                       (list 'kwargs ($ 2)))))
-                          (begin
-                            (display "FIRST BLOCK(4th sub-block) - ")
-                            (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
-                            (newline)
-                            (list (list 'vararg ($ 2)) ($ 3) ($ 4))))
+                        ","
+                        (opt
+                            (or ($--> (seq
+                                         "*"
+                                         (opt tfpdef)
+                                         (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
+                                                                               ($ 2))))
+                                                    (if ($ 3)
+                                                      (list 'kwonlyargs (cons ($ 2) ($ 3)))
+                                                     (list 'kwonlyargs ($ 2)))))
 
-                    ($--> (seq "**" tfpdef)
-                          (list 'kwargs ($ 2))))))
+                                         (opt ($--> (seq "," "**" tfpdef)
+                                                    (list 'kwargs ($ 2)))))
+                                     ;==>
+                                     ;
+                                     (begin    
+                                        (display "FIRST BLOCK(4th sub-block) - ")
+                                        (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                                        (newline)
+                                        (if ($ 2)
+                                          ;if ($ 2)
+                                          ;
+                                          (if (not (empty? ($ 3)))
+                                            (if ($ 4)
+                                                (list (list 'vararg ($ 2)) ($ 3) ($ 4))
+                                                (list (list 'vararg ($ 2)) ($ 3)))
+
+                                            (if ($ 4)
+                                              (list (list 'vararg ($ 2)) ($ 4))
+                                              (list (list 'vararg ($ 2)))))
+                                          
+                                          ;else ($ 2)
+                                          (if (not (empty? ($ 3)))
+                                            (if ($ 4)
+                                              (list ($ 3) ($ 4))
+                                              ($ 3))
+
+                                            (if ($ 4)
+                                              (list ($ 4))
+                                              (void))))))
+
+                                ($--> (seq "**" tfpdef)
+                                      (list 'kwargs ($ 2))))))
+                     ;==>                   
                      ($ 2))))
           ;==>
           ;
@@ -179,12 +205,17 @@
                (opt tfpdef)
                (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
                                                      ($ 2))))
-                          (list 'kwonlyargs (cons ($ 1) ($ 2)))))
+                          (if ($ 3)
+                              (list 'kwonlyargs (cons ($ 2) ($ 3)))
+                             (list 'kwonlyargs ($ 2)))))
+
                (opt ($--> (seq "," "**" tfpdef)
                           (list 'kwargs ($ 2)))))
             (begin
               (display "procesing 2ND block")
               (newline)
+
+
               (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
               (newline)
               (list (list 'vararg ($ 2)) ($ 3) ($ 4))

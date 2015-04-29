@@ -303,7 +303,64 @@ base]
 
             (display "REST : ") (display rest) (newline)
             
-            (process-typedargs rest))]))
+            (process-typedargs rest))]
+         
+        [(cons (list 'kwonlyargs var) rest)
+          (begin
+
+            (display "********* Matched KWONLY-args base *************")
+            (newline)
+            (match var
+                   [(cons (cons variable var-type) def-value)
+                    (begin
+                      (display "Complete argument")
+                      (newline)
+                      (display "variable = ")   (display variable) (newline)
+                      (display "var-type = ")   (display var-type) (newline)
+                      (display "default = ")    (display def-value) (newline)
+                      (set! type_kwonlyargs_base (append type_kwonlyargs_base (list variable)))
+                      (set! type_kwdefaults_base (append type_kwdefaults_base  (list def-value)))
+                      (set! type_kwonlyargs-type_base (append type_kwonlyargs-type_base var-type)))]
+
+                   ; This case is matched when there is no DEFAULT VALUE for arguments
+                   [(cons variable var-type)
+                    (begin
+                      (display "Variable - ")
+                      (display variable)
+                      (newline)
+                      (display "var-type - ")
+                      (display var-type)
+                      (newline)
+                      (set! type_kwonlyargs_base (append type_kwonlyargs_base (list variable)))
+                      (set! type_kwonlyargs-type_base (append type_kwonlyargs-type_base var-type))
+                      (set! type_kwdefaults_base (append type_kwdefaults_base (list #f))))]
+
+                   [else
+                     (begin
+                       (display "No default-value-")
+                       (display var)
+                       (newline)
+                       (set! type_kwonlyargs_base (append type_kwonlyargs_base (list var))))])
+
+            (display "REST : ") (display rest) (newline)
+            (process-typedargs rest))]
+
+
+        [(cons (list 'varargs  var) rest)
+          (begin
+            (display "-----------------  Matched VAR-args base ---------------------")
+            (newline) 
+            (set! type_varargs_base (append type_varargs_base (list var)))
+            (process-typedargs rest))]
+
+        [(cons (list 'kwarg  var) rest)
+          (begin
+            (display "-----------------  Matched VAR-args base ---------------------")
+            (newline)
+            (set! type_kwargs_base (append type_kwargs_base (list var)))
+            (process-typedargs rest))]
+
+         ))
               
 
 (define arg_base '())
