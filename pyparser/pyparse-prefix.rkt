@@ -199,6 +199,113 @@ base]
            ]))
 
 
+
+(define type_arg_base '())
+(define type_arg-type_base '())
+(define type_defaults_base '())
+
+(define type_kwonlyargs_base '())
+(define type_kwonlyargs-type_base '())
+(define type_kwdefaults_base '())
+
+(define type_varargs_base '())
+(define type_kwargs_base '())
+(define type_keywords_base '())
+(define type_final_list '())
+
+(define (reset-all-typed-variables flag)
+  (if (= flag 1)
+    (begin
+        (set! type_arg_base '())
+        (set! type_arg-type_base '())
+        (set! type_defaults_base '())
+        (set! type_kwonlyargs_base '())
+        (set! type_kwonlyargs-type_base '())
+        (set! type_kwdefaults_base '())
+        (set! type_varargs_base '())
+        (set! type_kwargs_base '())
+        (set! type_keywords_base '())
+        (set! type_final_list '()))
+    (void)))
+
+(define (process-typedargs typedargs)
+  (display "----------------------- START TYPEARGS ------------------------")
+  (newline)
+  (display "TYPEDARG_LIST - ")
+  (display typedargs)
+  (newline)
+
+  (match typedargs
+         ['()
+          (begin
+            (display "TYPEDARGS Base case")
+            (newline)
+            (set! type_final_list
+              (list
+                (append (list 'args) type_arg_base)
+                (cons  'arg-types type_arg-type_base)
+
+                (list 'varargs (if (empty? type_varargs_base)
+                                  #f
+                                  type_varargs_base))
+
+                (append (list 'kwonlyargs) type_kwonlyargs_base)
+                (append (list 'kwonlyargs-type) type_kwonlyargs-type_base)
+                (append (list 'kw_defaults) type_kwdefaults_base)
+
+                (list 'kwarg (if (empty? type_kwargs_base)
+                                 #f
+                                 type_kwargs_base))
+
+                (append (list 'defaults) type_defaults_base)))
+            (display "TYPEDARGS FINAL LIST - ")
+            (display type_final_list)
+            (newline)
+            (reset-all-typed-variables 1)
+            type_final_list)]
+
+         [(cons (list 'args var) rest)
+          (begin
+
+            (display "********* Matched type-arg base *************")
+            (newline)
+            (match var
+                   [(cons (cons variable var-type) def-value)
+                    (begin
+                      (display "Complete argument")
+                      (newline)
+                      (display "variable = ")   (display variable) (newline)
+                      (display "var-type = ")   (display var-type) (newline)
+                      (display "default = ")    (display def-value) (newline)
+                      (set! type_arg_base (append type_arg_base (list variable)))
+                      (set! type_defaults_base (append type_defaults_base (list def-value)))
+                      (set! type_arg-type_base (append type_arg-type_base var-type)))]
+
+                   ; This case is matched when there is no DEFAULT VALUE for arguments
+                   [(cons variable var-type)
+                    (begin
+                      (display "Variable - ")
+                      (display variable)
+                      (newline)
+                      (display "var-type - ")
+                      (display var-type)
+                      (newline)
+                      (set! type_arg_base (append type_arg_base (list variable)))
+                      (set! type_arg-type_base (append type_arg-type_base var-type))
+                      (set! type_defaults_base (append type_defaults_base (list #f))))]
+
+                   [else 
+                     (begin
+                       (display "No default-value-")
+                       (display var)
+                       (newline)
+                       (set! type_arg_base (append type_arg_base (list var))))])
+
+            (display "REST : ") (display rest) (newline)
+            
+            (process-typedargs rest))]))
+              
+
 (define arg_base '())
 (define starargs_base '())
 (define kwargs_base '())

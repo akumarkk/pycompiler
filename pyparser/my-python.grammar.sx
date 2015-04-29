@@ -119,9 +119,38 @@
           ;==>
           ;
             (begin
-                (display "processing typeargs ...")
+              (display "processing typeargs ...")
               (newline)
-              ))
+              (display "ONE : ")     (display ( if($ 2)
+                                                  (list 'args (cons ($ 1) ($ 2)))
+                                                  (list 'args ($ 1)))) (newline)
+              (display "TWO : ")    (display ($ 3)) (newline)
+              (display "THREE : ")  (display ($ 4)) (newline)
+              
+              (if ($ 4)
+                ; When ($ 4) is there
+                (if (not (empty? ($ 3)))
+                  (process-typedargs (list (if ($ 2)
+                                             (list 'args (cons ($ 1) ($ 2)))
+                                             (list 'args ($ 1)))
+                                           ($ 3)
+                                           ($ 4)))
+                  (process-typedargs (list (if ($ 2)
+                                             (list 'args (cons ($ 1) ($ 2)))
+                                             (list 'args ($ 1)))
+                                           ($ 4))))
+
+                ; When ($ 4) is NOT there
+                (if (not (empty? ($ 3)))
+                  (process-typedargs (list (if ($ 2)
+                                             (list 'args (cons ($ 1) ($ 2)))
+                                             (list 'args ($ 1)))
+                                           ($ 3)))
+
+                  (process-typedargs (list (if ($ 2)
+                                           (list 'args (cons ($ 1) ($ 2)))
+                                           (list 'args ($ 1)))))))))
+
 
       ;SECOND BLOCK
       ($--> (seq
