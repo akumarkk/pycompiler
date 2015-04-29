@@ -91,9 +91,29 @@
                            (newline)
                            (display "TWO - ")    (display ($ 3)) (newline)
                            (display "Populated ARG_LIST - ")
-                           (display (list 'args (cons ($ 2) ($ 3))))
+                           (display (if ($ 3) (list 'args (cons ($ 2) ($ 3))) (list 'args ($ 2))))
                            (newline)
-                           (list 'args (cons ($ 2) ($ 3))))))
+                           ;(list 'args (cons ($ 2) ($ 3))))))
+                           ;($ 3) is already a list
+                           (if ($ 3)
+                             (begin
+                               (display "CONSTRUCTING LIST _ ")
+                               (newline)
+                               (display "one - ")
+                               (display ($ 2))      (newline)
+                               (display "Two - ")   (display ($ 3)) (newline)
+                               ;(append (list 'args) (cons ($ 2) ($ 3)))
+                               (list 'args (cons ($ 2) ($ 3))))
+                             (begin
+                               (display "ELSE CONSTRUCTING LIST _ ") (newline)
+                                (display "one - ")
+                                (display ($ 2))      (newline)
+                                (display "two - ")
+                                (display (append (list 'args) ($ 2)))
+                                (newline)
+                                (display "OTHER - ")
+                                (display (list 'args ($ 2))) (newline)
+                                (list 'args ($ 2)))))))
                     
            (opt
                ($--> (seq
@@ -126,7 +146,8 @@
                                                   (list 'args ($ 1)))) (newline)
               (display "TWO : ")    (display ($ 3)) (newline)
               (display "THREE : ")  (display ($ 4)) (newline)
-              
+              (display "__________________________  START _________________________________")
+              (newline)
               (if ($ 4)
                 ; When ($ 4) is there
                 (if (not (empty? ($ 3)))
@@ -142,9 +163,9 @@
 
                 ; When ($ 4) is NOT there
                 (if (not (empty? ($ 3)))
-                  (process-typedargs (list (if ($ 2)
-                                             (list 'args (cons ($ 1) ($ 2)))
-                                             (list 'args ($ 1)))
+                  (process-typedargs (append (if ($ 2)
+                                             (list (list 'args (cons ($ 1) ($ 2))))
+                                             (list (list 'args ($ 1))))
                                            ($ 3)))
 
                   (process-typedargs (list (if ($ 2)

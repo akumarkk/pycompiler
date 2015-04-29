@@ -224,12 +224,11 @@ base]
         (set! type_kwdefaults_base '())
         (set! type_varargs_base '())
         (set! type_kwargs_base '())
-        (set! type_keywords_base '())
-        (set! type_final_list '()))
+        (set! type_keywords_base '()))
     (void)))
 
 (define (process-typedargs typedargs)
-  (display "----------------------- START TYPEARGS ------------------------")
+  ;(display "----------------------- START TYPEARGS ------------------------")
   (newline)
   (display "TYPEDARG_LIST - ")
   (display typedargs)
@@ -262,7 +261,8 @@ base]
             (display type_final_list)
             (newline)
             (reset-all-typed-variables 1)
-            type_final_list)]
+            `(Arguments ,@type_final_list))]
+            ;type_final_list)]
 
          [(cons (list 'args var) rest)
           (begin
