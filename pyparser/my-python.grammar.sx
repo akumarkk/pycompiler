@@ -129,7 +129,7 @@
                                                      (list 'kwonlyargs ($ 2)))))
 
                                          (opt ($--> (seq "," "**" tfpdef)
-                                                    (list 'kwargs ($ 2)))))
+                                                    (list 'kwarg ($ 2)))))
                                      ;==>
                                      ;
                                      (begin    
@@ -159,7 +159,7 @@
                                               (void))))))
 
                                 ($--> (seq "**" tfpdef)
-                                      (list 'kwargs ($ 2))))))
+                                      (list 'kwarg ($ 2))))))
                      ;==>                   
                      ($ 2))))
           ;==>
@@ -210,20 +210,38 @@
                              (list 'kwonlyargs ($ 2)))))
 
                (opt ($--> (seq "," "**" tfpdef)
-                          (list 'kwargs ($ 2)))))
+                          (list 'kwarg ($ 2)))))
+            
+            ;==>
+            ;
             (begin
               (display "procesing 2ND block")
               (newline)
+              (if ($ 2)
+                ;if ($ 2)
+                (if (not (empty? ($ 3)))
+                  (if ($ 4)
+                    (process-typedargs (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                    (process-typedargs (list (list 'vararg ($ 2)) ($ 3))))
 
+                  (if ($ 4)
+                    (process-typedargs (list (list 'vararg ($ 2)) ($ 4)))
+                    (process-typedargs (list (list 'vararg ($ 2))))))
 
-              (display (list (list 'vararg ($ 2)) ($ 3) ($ 4)))
-              (newline)
-              (list (list 'vararg ($ 2)) ($ 3) ($ 4))
-              ))
+                ;ELSE ($ 2)
+                (if (not (empty? ($ 3)))
+                  (if ($ 4)
+                    (process-typedargs (list ($ 3) ($ 4)))
+                    (process-typedargs ($ 3)))
+
+                  (if ($ 4)
+                    (process-typedargs (list ($ 4)))
+                    (void))))))
+
 
       ;THIRD BLOCK
       ($--> (seq "**" tfpdef)
-            (list 'kwargs ($ 2)))))
+            (process-typedargs (list (list 'kwarg ($ 2)))))))
 
 
 

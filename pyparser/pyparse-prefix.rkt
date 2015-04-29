@@ -346,18 +346,18 @@ base]
             (process-typedargs rest))]
 
 
-        [(cons (list 'varargs  var) rest)
+        [(cons (list 'vararg  var) rest)
           (begin
             (display "-----------------  Matched VAR-args base ---------------------")
             (newline) 
-            (set! type_varargs_base (append type_varargs_base (list var)))
+            (set! type_varargs_base (append type_varargs_base (car var)))
             (process-typedargs rest))]
 
         [(cons (list 'kwarg  var) rest)
           (begin
-            (display "-----------------  Matched VAR-args base ---------------------")
+            (display "-----------------  Matched KW-args base ---------------------")
             (newline)
-            (set! type_kwargs_base (append type_kwargs_base (list var)))
+            (set! type_kwargs_base (append type_kwargs_base (car var)))
             (process-typedargs rest))]
 
          ))
