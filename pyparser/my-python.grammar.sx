@@ -59,7 +59,7 @@
                 `(FunctionDef, 
                    `(name, (string->symbol ($ 2))), 
                    `(args, ($ 3)), 
-                    (cons 'body ($ 6)), 
+                    (append (list 'body) (list ($ 6))), 
                    `(decorator_list), 
                     (if ($ 4) 
                      `(returns, ($ 4))

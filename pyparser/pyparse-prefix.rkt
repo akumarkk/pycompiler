@@ -244,12 +244,12 @@ base]
                 (append (list 'args) type_arg_base)
                 (cons  'arg-types type_arg-type_base)
 
-                (append (list 'varargs) (if (empty? type_varargs_base)
+                (append (list 'vararg) (if (empty? type_varargs_base)
                                             (list #f)
                                             type_varargs_base))
 
                 (append (list 'kwonlyargs) type_kwonlyargs_base)
-                (append (list 'kwonlyargs-type) type_kwonlyargs-type_base)
+                (append (list 'kwonlyarg-types) type_kwonlyargs-type_base)
                 (append (list 'kw_defaults) type_kwdefaults_base)
 
                 ;We want (vararg t1 (Name int)) NOT (vararg (t1 (Name int)))
