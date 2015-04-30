@@ -721,8 +721,24 @@
 
 
 
- (with_stmt (seq "with" with_item (rep (seq "," with_item)) ":" suite))
- (with_item (seq test (opt (seq "as" expr))))
+ (with_stmt ($--> (seq "with" 
+                       with_item 
+                       (rep ($--> (seq "," with_item)
+                                  (begin
+                                    ;(display "WITH repetition") (newline)
+                                    ($ 2))))
+                       ":" 
+                       suite)
+                  
+                  (append (list 'With) 
+                          (if (empty? ($ 3))
+                            (list (list ($ 2)))
+                            (list (append (list ($ 2)) ($ 3))))
+                          (list ($ 5)))))
+
+ (with_item ($--> (seq test (opt ($--> (seq "as" expr)
+                                       ($ 2))))
+                  (list ($ 1) ($ 2))))
  
  (except_clause ($-->   (seq "except" (opt ($-->    (seq test (opt ($--> (seq "as" 'NAME)
                                                                          (string->symbol ($ 2)))))
