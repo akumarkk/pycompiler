@@ -244,17 +244,20 @@ base]
                 (append (list 'args) type_arg_base)
                 (cons  'arg-types type_arg-type_base)
 
-                (list 'varargs (if (empty? type_varargs_base)
-                                  #f
-                                  type_varargs_base))
+                (append (list 'varargs) (if (empty? type_varargs_base)
+                                            (list #f)
+                                            type_varargs_base))
 
                 (append (list 'kwonlyargs) type_kwonlyargs_base)
                 (append (list 'kwonlyargs-type) type_kwonlyargs-type_base)
                 (append (list 'kw_defaults) type_kwdefaults_base)
 
-                (list 'kwarg (if (empty? type_kwargs_base)
-                                 #f
-                                 type_kwargs_base))
+                ;We want (vararg t1 (Name int)) NOT (vararg (t1 (Name int)))
+                ;so list ---> append
+                ;(append (list 'kwarg) type_kwargs_base)
+                (append (list 'kwarg) (if (empty? type_kwargs_base)
+                                          (list #f)
+                                       type_kwargs_base))
 
                 (append (list 'defaults) type_defaults_base)))
             (display "TYPEDARGS FINAL LIST - ")
@@ -353,7 +356,21 @@ base]
           (begin
             (display "-----------------  Matched VAR-args base ---------------------")
             (newline) 
+            (display "VAR : ")
+            (display var)
+            (newline)
             (set! type_varargs_base (append type_varargs_base (car var)))
+            ;(display "DONE - ")
+            ;(display type_varargs_base)
+            ;(newline)
+            ;(display "CDR - ")
+            ;(display (cdr var))
+            ;(newline)
+
+            (if (not (equal? (cdr var) (list #f)))
+              (set! type_varargs_base (append (list type_varargs_base) (cdr var)))
+              (void))
+
             (process-typedargs rest))]
 
         [(cons (list 'kwarg  var) rest)
@@ -361,6 +378,31 @@ base]
             (display "-----------------  Matched KW-args base ---------------------")
             (newline)
             (set! type_kwargs_base (append type_kwargs_base (car var)))
+            (display "VALUE - ")
+            (display type_kwargs_base)
+            (newline)
+            (display "VAR - ")
+            (display var)
+            (newline)
+            (display "RES - ")
+            (display rest)
+            (newline)
+
+            (if (not (equal? (cdr var) (list #f)))
+              (begin
+                (set! type_kwargs_base (append (list type_kwargs_base) (cdr var)))
+                ;(display "TYPE present - ")
+                ;(display type_kwargs_base)
+                ;(newline)
+                )
+              (begin
+                ;(display "TYPE NOT Present - ")
+                ;(display type_kwargs_base)
+                ;(newline)
+                (set! type_kwargs_base (list type_kwargs_base))
+                (void)))
+
+
             (process-typedargs rest))]
 
          ))
