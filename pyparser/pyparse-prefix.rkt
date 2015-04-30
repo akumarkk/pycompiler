@@ -92,21 +92,52 @@ base]
 base]
 [(cons op exp)
  (begin
-      (if (equal? (car op) "=") (process-assign (list base) ops)
-                 `(AugAssign, base ,
-                 (cond [(equal? op "+=") `Add]
-                       [(equal? op "-=") `Sub]
-                       [(equal? op "*=") `Mult]
-                       [(equal? op "/=") `Div]
-                       [(equal? op "%=") `Mod]
-                       [(equal? op "//=") `FloorDiv]
-                       [(equal? op "<<=") `LShift]
-                       [(equal? op ">>=") `RShift]
-                       [(equal? op "&=") `BitAnd]
-                       [(equal? op "^=") `BitXor]
-                       [(equal? op "|=") `BitOr]),
-                  (car exp)))) ]
-)))
+   ;(display "BASE - ")
+   ;(display base)
+   ;(newline)
+   ;(display "OPS - ")
+   ;(display ops)
+   ;(newline)
+   ;(display "OP - ")
+   ;(display op)
+   ;(newline)
+   ;(display "EXP - ") (display exp) (newline)
+   
+   (match op
+          [(or "+=" "-=" "*=" "/=" "%=" "//=" "<<=" ">>=" "&=" "^="  "|=")
+
+           `(AugAssign, base ,
+                        (cond [(equal? op "+=") `Add]
+                              [(equal? op "-=") `Sub]
+                              [(equal? op "*=") `Mult]
+                              [(equal? op "/=") `Div]
+                              [(equal? op "%=") `Mod]
+                              [(equal? op "//=") `FloorDiv]
+                              [(equal? op "<<=") `LShift]
+                              [(equal? op ">>=") `RShift]
+                              [(equal? op "&=") `BitAnd]
+                              [(equal? op "^=") `BitXor]
+                              [(equal? op "|=") `BitOr]),
+                        (car exp))]
+          [(cons "=" name)
+           (process-assign (list base) ops)]))])))
+
+
+;      (if (equal? (car op) "=") (process-assign (list base) ops)
+;                 `(AugAssign, base ,
+;                 (cond [(equal? op "+=") `Add]
+;                       [(equal? op "-=") `Sub]
+;                       [(equal? op "*=") `Mult]
+;                       [(equal? op "/=") `Div]
+;                       [(equal? op "%=") `Mod]
+;                       [(equal? op "//=") `FloorDiv]
+;                       [(equal? op "<<=") `LShift]
+;                       [(equal? op ">>=") `RShift]
+;                       [(equal? op "&=") `BitAnd]
+;                       [(equal? op "^=") `BitXor]
+;                       [(equal? op "|=") `BitOr]),
+;                  exp))) ]
+;)))
 
 (define (process-unops base ops)
 (match ops
@@ -149,6 +180,9 @@ base]
       (process-dotted-names base  rest))]))
 
 (define main_list '())
+
+(define (remove-item pos)
+  (remove pos remove-item))
 
 (define (process-arguments-only argument_list)
   (newline)

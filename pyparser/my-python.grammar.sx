@@ -472,13 +472,13 @@
     
  (expr_stmt
   ($--> (seq
-   testlist_star_expr
-   (or ($--> (seq augassign (or yield_expr testlist)) (list ($ 1) ($ 2)))
-       (rep ($--> (seq "=" (or yield_expr testlist_star_expr)) (list ($ 1) ($ 2))))))
+            testlist_star_expr
+            (or ($--> (seq augassign (or yield_expr testlist)) (list ($ 1) ($ 2)))
+                (rep ($--> (seq "=" (or yield_expr testlist_star_expr)) (list ($ 1) ($ 2))))))
         (begin
-        (cond
-        [(equal? ($ 2) '()) `(Expr, ($ 1))]
-        [(process-augassign ($ 1) ($ 2))]))))
+            (cond
+                [(equal? ($ 2) '()) `(Expr, ($ 1))]
+                [(process-augassign ($ 1) ($ 2))]))))
 
  (testlist_star_expr
   ($--> (seq (or test star_expr) (rep (car #'("," #,(or test star_expr)))) (opt ","))
@@ -674,24 +674,39 @@
         suite
         (or ($-->   (seq
                         (rep+ ($-->   (seq except_clause ":" suite)
-                                      ($ 3)))
+                                      (append ($ 1) ($ 3))))
+
                         (opt ($-->  (seq "else" ":" suite)
                                     ($ 3)))
                         (opt ($-->  (seq "finally" ":" suite)
                                     ($ 3))))
+                    (begin
+                      ;(display "ONE - ") (display ($ 1)) (newline)
+                      ;(display "TWO - ") (display ($ 2)) (newline)
+                      ;(display "THREE- ") (display ($ 3)) (newline)
                     (if ($ 2)
                         (if ($ 3)
-                            `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody, ($ 3)))
-                        `(, `(handlers, ($ 1)), `(orelse ,($ 2)), `(finalbody)))
+                            ;`( , (cons 'handlers ($ 1)), `(orelse ,@($ 2)), `(finalbody ,@($ 3)))
+                            (append `(  ,(cons 'handlers ($ 1)), (cons 'orelse ($ 2)), (cons 'finalbody ($ 3))))
+                            (begin
+                              ;(display "Else case ") (newline)
+                                `(, (cons 'handlers ($ 1)), (cons 'orelse ($ 2)), `(finalbody))))
                      (if ($ 3)
-                            `(, `(handlers, ($ 1)), `(orelse), `(finalbody, ($ 3)))
+                            `(, (cons 'handlers ($ 1)), `(orelse), (cons 'finalbody ($ 3)))
                           `(, (cons 'handlers ($ 1)), `(orelse), `(finalbody))))))
 
 
-                        ($-->   (seq "finally" ":" suite)
-                                `(, `(handlers), `(orelse), `(finalbody, ($ 3)))))
+             ($-->   (seq "finally" ":" suite)
+                     `(, `(handlers), `(orelse), (cons 'finalbody ($ 3))))))
 
-        `(Try, `(body, @($ 3)),($ 4))))
+        (begin
+          ;(display "BODY - ")
+          ;(display ($ 3))
+          ;(newline)
+          ;(display "REST - ") (display ($ 4)) (newline)
+
+          (append `(Try, (cons 'body ($ 3))) ($ 4)))))
+          ;`(Try, `(body ,@($ 3)),($ 4)))))
  
 
                     ;`(, (cons 'handlers ($ 1)), (cons 'orelse (if ($ 2) ($ 2) '())), (cons 'finalbody (if ($ 3) ($ 3) '())))))
@@ -710,13 +725,12 @@
  (with_item (seq test (opt (seq "as" expr))))
  
  (except_clause ($-->   (seq "except" (opt ($-->    (seq test (opt ($--> (seq "as" 'NAME)
-                                                                    (string->symbol ($ 2)))))
+                                                                         (string->symbol ($ 2)))))
                                                     (if ($ 2)
                                                         `(, ($ 1), ($ 2))
-                                                     `($ 1)))))
+                                                     (list ($ 1) #f)))))
                         (if ($ 2)
-                            `(except, ($ 2))
-                         ;(list 'except #f #f))))
+                            `(except ,@($ 2))
                          `(except, #f, #f))))
 
 
