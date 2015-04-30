@@ -227,18 +227,21 @@ base]
         (set! type_keywords_base '()))
     (void)))
 
+
+(define type-do-reset 1)
+
 (define (process-typedargs typedargs)
   ;(display "----------------------- START TYPEARGS ------------------------")
-  (newline)
-  (display "TYPEDARG_LIST - ")
-  (display typedargs)
-  (newline)
+  ;(newline)
+  ;(display "TYPEDARG_LIST - ")
+  ;(display typedargs)
+  ;(newline)
 
   (match typedargs
          ['()
           (begin
-            (display "TYPEDARGS Base case")
-            (newline)
+            ;(display "TYPEDARGS Base case")
+            ;(newline)
             (set! type_final_list
               (list
                 (append (list 'args) type_arg_base)
@@ -260,26 +263,26 @@ base]
                                        type_kwargs_base))
 
                 (append (list 'defaults) type_defaults_base)))
-            (display "TYPEDARGS FINAL LIST - ")
-            (display type_final_list)
-            (newline)
-            (reset-all-typed-variables 1)
+            ;(display "TYPEDARGS FINAL LIST - ")
+            ;(display type_final_list)
+            ;(newline)
+            (reset-all-typed-variables type-do-reset)
             `(Arguments ,@type_final_list))]
             ;type_final_list)]
 
          [(cons (list 'args var) rest)
           (begin
 
-            (display "********* Matched type-arg base *************")
-            (newline)
+            ;(display "********* Matched type-arg base *************")
+            ;(newline)
             (match var
                    [(cons (cons variable var-type) def-value)
                     (begin
-                      (display "Complete argument")
-                      (newline)
-                      (display "variable = ")   (display variable) (newline)
-                      (display "var-type = ")   (display var-type) (newline)
-                      (display "default = ")    (display def-value) (newline)
+                      ;(display "Complete argument")
+                      ;(newline)
+                      ;(display "variable = ")   (display variable) (newline)
+                      ;(display "var-type = ")   (display var-type) (newline)
+                      ;(display "default = ")    (display def-value) (newline)
                       (set! type_arg_base (append type_arg_base (list variable)))
                       (set! type_defaults_base (append type_defaults_base (list def-value)))
                       (set! type_arg-type_base (append type_arg-type_base var-type)))]
@@ -287,24 +290,24 @@ base]
                    ; This case is matched when there is no DEFAULT VALUE for arguments
                    [(cons variable var-type)
                     (begin
-                      (display "Variable - ")
-                      (display variable)
-                      (newline)
-                      (display "var-type - ")
-                      (display var-type)
-                      (newline)
+                      ;(display "Variable - ")
+                      ;(display variable)
+                      ;(newline)
+                      ;(display "var-type - ")
+                      ;(display var-type)
+                      ;(newline)
                       (set! type_arg_base (append type_arg_base (list variable)))
                       (set! type_arg-type_base (append type_arg-type_base var-type))
                       (set! type_defaults_base (append type_defaults_base (list #f))))]
 
                    [else 
                      (begin
-                       (display "No default-value-")
-                       (display var)
-                       (newline)
+                       ;(display "No default-value-")
+                       ;(display var)
+                       ;(newline)
                        (set! type_arg_base (append type_arg_base (list var))))])
 
-            (display "REST : ") (display rest) (newline)
+            ;(display "REST : ") (display rest) (newline)
             ;(if (empty? rest)
               ;(process-typedargs (car rest))
             (process-typedargs rest))]
@@ -312,16 +315,16 @@ base]
         [(cons (list 'kwonlyargs var) rest)
           (begin
 
-            (display "********* Matched KWONLY-args base *************")
-            (newline)
+            ;(display "********* Matched KWONLY-args base *************")
+            ;(newline)
             (match var
                    [(cons (cons variable var-type) def-value)
                     (begin
-                      (display "Complete argument")
-                      (newline)
-                      (display "variable = ")   (display variable) (newline)
-                      (display "var-type = ")   (display var-type) (newline)
-                      (display "default = ")    (display def-value) (newline)
+                      ;(display "Complete argument")
+                      ;(newline)
+                      ;(display "variable = ")   (display variable) (newline)
+                      ;(display "var-type = ")   (display var-type) (newline)
+                      ;(display "default = ")    (display def-value) (newline)
                       (set! type_kwonlyargs_base (append type_kwonlyargs_base (list variable)))
                       (set! type_kwdefaults_base (append type_kwdefaults_base  (list def-value)))
                       (set! type_kwonlyargs-type_base (append type_kwonlyargs-type_base var-type)))]
@@ -329,24 +332,24 @@ base]
                    ; This case is matched when there is no DEFAULT VALUE for arguments
                    [(cons variable var-type)
                     (begin
-                      (display "Variable - ")
-                      (display variable)
-                      (newline)
-                      (display "var-type - ")
-                      (display var-type)
-                      (newline)
+                      ;(display "Variable - ")
+                      ;(display variable)
+                      ;(newline)
+                      ;(display "var-type - ")
+                      ;(display var-type)
+                      ;(newline)
                       (set! type_kwonlyargs_base (append type_kwonlyargs_base (list variable)))
                       (set! type_kwonlyargs-type_base (append type_kwonlyargs-type_base var-type))
                       (set! type_kwdefaults_base (append type_kwdefaults_base (list #f))))]
 
                    [else
                      (begin
-                       (display "No default-value-")
-                       (display var)
-                       (newline)
+                       ;(display "No default-value-")
+                       ;(display var)
+                       ;(newline)
                        (set! type_kwonlyargs_base (append type_kwonlyargs_base (list var))))])
 
-            (display "REST : ") (display rest) (newline)
+            ;(display "REST : ") (display rest) (newline)
             ;(if (empty? rest)
               ;(process-typedargs (car rest))
             (process-typedargs rest))]
@@ -354,11 +357,11 @@ base]
 
         [(cons (list 'vararg  var) rest)
           (begin
-            (display "-----------------  Matched VAR-args base ---------------------")
-            (newline) 
-            (display "VAR : ")
-            (display var)
-            (newline)
+            ;(display "-----------------  Matched VAR-args base ---------------------")
+            ;(newline) 
+            ;(display "VAR : ")
+            ;(display var)
+            ;(newline)
             (set! type_varargs_base (append type_varargs_base (car var)))
             ;(display "DONE - ")
             ;(display type_varargs_base)
@@ -375,18 +378,18 @@ base]
 
         [(cons (list 'kwarg  var) rest)
           (begin
-            (display "-----------------  Matched KW-args base ---------------------")
-            (newline)
+            ;(display "-----------------  Matched KW-args base ---------------------")
+            ;(newline)
             (set! type_kwargs_base (append type_kwargs_base (car var)))
-            (display "VALUE - ")
-            (display type_kwargs_base)
-            (newline)
-            (display "VAR - ")
-            (display var)
-            (newline)
-            (display "RES - ")
-            (display rest)
-            (newline)
+            ;(display "VALUE - ")
+            ;(display type_kwargs_base)
+            ;(newline)
+            ;(display "VAR - ")
+            ;(display var)
+            ;(newline)
+            ;(display "RES - ")
+            ;(display rest)
+            ;(newline)
 
             (if (not (equal? (cdr var) (list #f)))
               (begin
@@ -405,7 +408,71 @@ base]
 
             (process-typedargs rest))]
 
+        [(cons (list name var) rest)
+         (begin
+           ;(display "^^^^^^^ Matched cons of list ^^^^^^^^^^^")
+           ;(newline)
+           (set! type-do-reset 0)
+
+           (match (list name)
+                  [(cons (list sub-name sub-var) sub-rest)
+                   (begin
+                     (if (or (eq? sub-name 'args)
+                             (eq? sub-name 'kwonlyargs)
+                             (eq? sub-name 'vararg)
+                             (eq? sub-name 'kwarg))
+                       (process-typedargs (list name))
+                       (begin
+                         (process-typedargs (list sub-name))
+                         (process-typedargs (list sub-var)))))]
+
+                  [else
+                    (process-typedargs (list name))])
+
+           (process-typedargs (list var))
+           (process-typedargs rest)
+           (set! type-do-reset 1)
+           (reset-all-typed-variables 1)
+           `(Arguments ,@type_final_list))]
+
+        [(cons 'vararg vararg_list) rest
+         (begin
+           ;(display "MATCHING VARARGS ")
+           ;(newline)
+           ;(display "vararglist - ")
+           ;(display vararg_list)
+           ;(newline)
+           ;(display "Rest - ")
+           ;(display rest)
+           ;(newline)
+           ;(display "////////  TYPEARGS //////////")
+           ;(display (list typedargs))
+           (process-typedargs (list typedargs)))]
+           ;(process-typedargs (list (cons 'vararg vararg_list))))]
+
+        [(cons 'kwarg vararg_list) rest
+         (begin
+           ;(display "MATCHING KWARGS ")
+           ;(newline)
+           ;(display "vararglist - ")
+           ;(display vararg_list)
+           ;(newline)
+           ;(display "Rest - ")
+           ;(display rest)
+           ;(newline)
+           ;(display "////////  TYPEARGS //////////")
+           ;(display (list typedargs))
+           (process-typedargs (list typedargs)))]
+
+        [(cons any-arg arg-list) rest
+          (begin
+            ;(display "------------ *** NOT EXPECTED *** ---------------")
+            ;(newline)
+            (process-typedargs (list typedargs)))]
+
          ))
+
+
 
 (define (get_empty_arglist)
     (process-typedargs '()))
