@@ -1054,6 +1054,9 @@
                          ;(display "TWO - ")
                          ;(display ($ 2))
                          ;(newline)
+                         ;(display "Modified - ")
+                         ;(display (remove 5 ($ 2)))
+                         ;(newline)
                          (list 'args (append (list 'GeneratorExp) (list ($ 1)) (list ($ 2)))))
                        (list 'args ($ 1)))))
                ($--> (seq test "=" test)
@@ -1074,6 +1077,7 @@
  (comp_iter (or comp_for comp_if))
  (comp_for ($--> (seq "for" exprlist "in" or_test (opt comp_iter))
 		 (cond
+			[(equal? ($ 5) #f) `(for, ($ 2) in, ($ 4) if)]
 			[(equal? ($ 5) '()) `(for, ($ 2) in, ($ 4) if)]
 			[`(for, ($ 2) in, ($ 4), ($ 5) if)])))
  (comp_if ($--> (seq "if" test_nocond (opt comp_iter))
