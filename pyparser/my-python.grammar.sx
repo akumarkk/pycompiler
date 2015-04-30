@@ -304,27 +304,152 @@
 
 
  (varargslist
-  (or (seq
-       vfpdef
-       (opt (seq "=" test))
-       (rep (seq "," vfpdef (opt (seq "=" test))))
-       (opt
-        (seq
-         ","
-         (opt
-          (or (seq
-               "*"
-               (opt vfpdef)
-               (rep (seq "," vfpdef (opt (seq "=" test))))
-               (opt (seq "," "**" vfpdef)))
-              (seq "**" vfpdef))))))
-      (seq
-       "*"
-       (opt vfpdef)
-       (rep (seq "," vfpdef (opt (seq "=" test))))
-       (opt (seq "," "**" vfpdef)))
-      (seq "**" vfpdef)))
- (vfpdef 'NAME)
+  (or
+    ; VAR FIRST BLOCK
+    ($--> (seq
+           vfpdef
+           (opt ($--> (seq "=" test)
+                      ($ 2)))
+
+           (rep ($--> (seq "," vfpdef (opt ($--> (seq "=" test)
+                                                 ($ 2))))
+                      (begin
+                        (if ($ 3)
+                          (begin
+                            (list 'args (cons ($ 2) ($ 3))))
+                          (begin
+                            (list 'args ($ 2)))))))
+
+            (opt
+                ($--> (seq
+                        ","
+                        (opt
+                            (or ($--> (seq
+                                        "*"
+                                        (opt vfpdef)
+                                        (rep ($-->  (seq "," vfpdef (opt ($-->  (seq "=" test)
+                                                                                ($ 2))))
+                                                    (if ($ 3)
+                                                      (begin
+                                                        (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                                                      (begin
+                                                        (list 'kwonlyargs ($ 2))))))
+
+                                        (opt ($-->  (seq "," "**" vfpdef)
+                                                    (list 'kwarg ($ 3)))))
+
+                                      ;==>
+                                      (begin
+                                        (if ($ 2)
+                                          ;if ($ 2)
+                                          ;
+                                          (if (not (empty? ($ 3)))
+                                            (if ($ 4)
+                                              (begin
+                                                (append (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                                              (begin
+                                                (append (list 'vararg ($ 2)) ($ 3))))
+
+
+                                            (if ($ 4)
+                                              (begin
+                                                (list (list 'vararg ($ 2)) ($ 4)))
+                                              (begin
+                                                (list 'vararg ($ 2)))))
+                                          
+                                          
+                                          ;else ($ 2)
+                                          (if (not (empty? ($ 3)))
+                                            (if ($ 4)
+                                              (begin
+                                                (list ($ 3) ($ 4)))
+                                              (begin
+                                                ($ 3)))
+
+                                            (if ($ 4)
+                                              (list ($ 4))
+                                              (list (list 'vararg (cons #f #f))))))))
+
+
+                              ($-->   (seq "**" vfpdef)
+                                      (list 'kwarg ($ 2))))))
+
+                      ;==>
+                      ($ 2))))
+          
+          ;==>
+          (begin
+            (if ($ 4)
+              (if (not (empty? ($ 3)))
+                (begin
+                  (process-typedargs (append (if ($ 2)
+                                               (list (list 'args (cons ($ 1) ($ 2))))
+                                               (list (list 'args ($ 1))))
+                                             ($ 3)
+                                             ($ 4))))
+                (process-typedargs (list (if ($ 2)
+                                           (list 'args (cons ($ 1) ($ 2)))
+                                           (list 'args ($ 1)))
+                                         ($ 4))))
+              ; When ($ 4) is NOT there
+              (if (not (empty? ($ 3)))
+                (begin
+                  (process-typedargs (append (if ($ 2)
+                                               (list (list 'args (cons ($ 1) ($ 2))))
+                                               (list (list 'args ($ 1))))
+                                             ($ 3))))
+
+                (process-typedargs (list (if ($ 2)
+                                           (list 'args (cons ($ 1) ($ 2)))
+                                           (list 'args ($ 1)))))))))
+
+    ;VAR SECOND BLOCK
+     ($--> (seq
+              "*"
+              (opt vfpdef)
+              (rep ($--> (seq "," vfpdef (opt ($--> (seq "=" test)
+                                                    ($ 2))))
+                         (if ($ 3)
+                           (begin
+                             (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                           (begin
+                             (list 'kwonlyargs ($ 2))))))
+
+              (opt ($--> (seq "," "**" vfpdef)
+                         (list 'kwarg ($ 3)))))
+
+           ;==>
+           ;
+           (begin
+             (if ($ 2)
+               ;if ($ 2)
+               (if (not (empty? ($ 3)))
+                 (if ($ 4)
+                   (process-typedargs (append (list (list 'vararg ($ 2)))  ($ 3) (list ($ 4))))
+                   (process-typedargs (append (list (list 'vararg ($ 2))) ($ 3))))
+
+                 (if ($ 4)
+                   (process-typedargs (append (list (list 'vararg ($ 2))) ($ 4)))
+                   (process-typedargs (list (list 'vararg ($ 2))))))
+
+               ;ELSE ($ 2)
+               (if (not (empty? ($ 3)))
+                 (if ($ 4)
+                   (process-typedargs (append ($ 3) ($ 4)))
+                   (process-typedargs ($ 3)))
+
+                 (if ($ 4)
+                   (process-typedargs  ($ 4))
+                   (process-typedargs '()))))))
+     
+     ;THIRD BLOCK
+     ($--> (seq "**" vfpdef)
+           (process-typedargs (list (list 'kwarg ($ 2)))))))
+
+
+ (vfpdef ($--> 'NAME
+               `(, (string->symbol $$), #f)))
+
 
  (stmt ($-->    (or simple_stmt compound_stmt)
                 $$))
@@ -603,9 +728,26 @@
 			[(equal? ($ 2) #f) ($ 1)]
 			[`(IfExp, (car ($ 2)), ($ 1), @(cdr ($ 2)))])) 
 	   lambdef))
+ 
  (test_nocond (or or_test lambdef_nocond))
- (lambdef (seq "lambda" (opt varargslist) ":" test))
- (lambdef_nocond (seq "lambda" (opt varargslist) ":" test_nocond))
+
+ (lambdef ($--> (seq "lambda" (opt varargslist) ":" test)
+                ;==>
+                `(Lambda, 
+                   (if ($ 2)
+                        ($ 2) 
+                        (get_empty_arglist)), 
+                   ($ 4))))
+ 
+ 
+ (lambdef_nocond ($-->  (seq "lambda" (opt varargslist) ":" test_nocond)
+                 ;==>
+                        `(Lambda, 
+                           (if ($ 2) 
+                             ($ 2) 
+                             (get_empty_arglist)), 
+                           ($ 4))))
+
  (or_test ($--> (seq and_test (rep (car #'("or" #,and_test))))
 		(cond [(equal? ($ 2) '()) ($ 1)]
 		      [`(BoolOp Or, ($ 1), @($ 2))])))
