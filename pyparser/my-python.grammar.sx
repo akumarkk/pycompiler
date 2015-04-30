@@ -179,7 +179,7 @@
                                               (begin
                                                 ;(display "5th CASE - ")
                                                 ;(display (list ($ 3) ($ 4)))
-                                                (newline)
+                                                ;(newline)
                                                 (list ($ 3) ($ 4)))
                                               (begin
                                                 ;(display "6TH CASE - ")
