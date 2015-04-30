@@ -198,6 +198,58 @@ base]
               main_list))
            ]))
 
+; START VAR - ARGS 
+(define var_arg_base '())
+(define var_arg-type_base '())
+(define var_defaults_base '())
+
+(define var_kwonlyargs_base '())
+(define var_kwonlyargs-type_base '())
+(define var_kwdefaults_base '())
+
+(define var_varargs_base '())
+(define var_kwargs_base '())
+(define var_keywords_base '())
+(define var_final_list '())
+
+(define (reset-all-vararg-variables flag)
+  (if (= flag 1)
+    (begin
+        (set! var_arg_base '())
+        (set! var_arg-type_base '())
+        (set! var_defaults_base '())
+        (set! var_kwonlyargs_base '())
+        (set! var_kwonlyargs-type_base '())
+        (set! var_kwdefaults_base '())
+        (set! var_varargs_base '())
+        (set! var_kwargs_base '())
+        (set! var_keywords_base '()))
+    (void)))
+
+
+(define var-do-reset 1)
+
+(define (process-varargs varargs)
+
+  (match varargs
+         ['()
+          (begin
+            (set! type_final_list
+              (list
+                (append (list 'args) type_arg_base)
+                (cons  'arg-types type_arg-type_base)
+
+                (append (list 'vararg) (if (empty? type_varargs_base)
+                                            (list #f)
+                                            type_varargs_base))
+
+                (append (list 'kwonlyargs) type_kwonlyargs_base)
+                (append (list 'kwonlyarg-types) type_kwonlyargs-type_base)
+                (append (list 'kw_defaults) type_kwdefaults_base))))]))
+
+
+
+; END VAR _ ARGS
 
 
 (define type_arg_base '())
@@ -518,27 +570,27 @@ base]
 ;   *** This results in resetting all the global variables ***
 
 (define (process-all-args arglist)
-  (display "===========   START process-all-arglist =============")
-  (newline)
-  (display "ARGLIST - ")
-  (display arglist)
-  (newline)
-  (display "args_base - ")
-  (display arg_base)
-  (newline)
+  ;(display "===========   START process-all-arglist =============")
+  ;(newline)
+  ;(display "ARGLIST - ")
+  ;(display arglist)
+  ;(newline)
+  ;(display "args_base - ")
+  ;(display arg_base)
+  ;(newline)
 
-  (display "starargs_base - ")
-  (display starargs_base)
-  (newline)
+  ;(display "starargs_base - ")
+  ;(display starargs_base)
+  ;(newline)
 
-  (display "kwargs_base - ")
-  (display kwargs_base)
-  (newline)
+  ;(display "kwargs_base - ")
+  ;(display kwargs_base)
+  ;(newline)
 
-  (display "keywords_base - ")
-  (display keywords_base)
-  (newline)
-  (newline)
+  ;(display "keywords_base - ")
+  ;(display keywords_base)
+  ;(newline)
+  ;(newline)
 
   (match arglist
          ['()
@@ -566,45 +618,45 @@ base]
                 (set! keywords_base '()))
               (void))
 
-            (display "FINAL_LIST - ")
-            (display final_list)
-            (newline)
-            (display "__________________  END process-all-arglist ________________")
-            (newline)
+            ;(display "FINAL_LIST - ")
+            ;(display final_list)
+            ;(newline)
+            ;(display "__________________  END process-all-arglist ________________")
+            ;(newline)
 
             final_list)]
 
          [(cons (list 'args var) rest)
           (begin
 
-            (display "********* Matched arg base *************")
-            (newline)
+            ;(display "********* Matched arg base *************")
+            ;(newline)
             (set! arg_base (append arg_base (list var)))
             (process-all-args rest))]
 
          [(cons (list 'starargs var) rest)
           (begin
-            (display "_________ STARARGS ________")
-            (display var)
-            (newline)
+            ;(display "_________ STARARGS ________")
+            ;(display var)
+            ;(newline)
             ;(set! starargs_base (append starargs_base (list var)))
             (set! starargs_base  var)
             (process-all-args rest))]
 
          [(cons (list 'kwargs var) rest)
           (begin
-            (display "//////// KW ARGS ////////")
-            (display var)
-            (newline)
+            ;(display "//////// KW ARGS ////////")
+            ;(display var)
+            ;(newline)
             ;(set! kwargs_base (append kwargs_base (list var)))
             (set! kwargs_base var)
             (process-all-args rest))]
 
          [(cons (list 'keywords var) rest)
           (begin
-            (display "........  KEYWORDS  .......")
-            (display var)
-            (newline)
+            ;(display "........  KEYWORDS  .......")
+            ;(display var)
+            ;(newline)
             (set! keywords_base (append keywords_base (list var)))
             (process-all-args rest))]
        
@@ -613,24 +665,24 @@ base]
          ;
          [(cons (list name var) rest)
           (begin
-            (display "^^^^^^^ Matched cons of list ^^^^^^^^^^^")
-            (newline)
-            (display "NAME ^")
-            (display name)
-            (newline)
-            (display "VAR ^ ")
-            (display var)
-            (newline)
-            (display "REST ^ ")
-            (display rest)
-            (newline)
+            ;(display "^^^^^^^ Matched cons of list ^^^^^^^^^^^")
+            ;(newline)
+            ;(display "NAME ^")
+            ;(display name)
+            ;(newline)
+            ;(display "VAR ^ ")
+            ;(display var)
+            ;(newline)
+            ;(display "REST ^ ")
+            ;(display rest)
+            ;(newline)
             (set! do-reset 0)
 
             (match (list name)
                    [(cons (list sub-name sub-var) sub-rest)
                     (begin
-                      (display "Matched sub-expression")
-                      (newline)
+                      ;(display "Matched sub-expression")
+                      ;(newline)
                       (if (or (eq? sub-name 'args)
                               (eq? sub-name 'starargs)
                               (eq? sub-name 'keywords)
