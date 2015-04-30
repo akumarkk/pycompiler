@@ -58,15 +58,19 @@
                                             ":" suite)
                 `(FunctionDef, 
                    `(name, (string->symbol ($ 2))), 
-                   `(args, ($ 3)), 
-                    (append (list 'body) (list ($ 6))), 
+                   `(args, ($ 3)),
+                   (cons 'body ($ 6)),
+                   ;If body is entered in next line behavior is different
+                    ;(append (list 'body) (list ($ 6))), 
                    `(decorator_list), 
                     (if ($ 4) 
                      `(returns, ($ 4))
                      `(returns, #f)))))
  
  (parameters ($-->  (seq "(" (opt typedargslist) ")")
-                    ($ 2)))
+                    (if ($ 2)
+                      ($ 2)
+                      (get_empty_arglist))))
 
  ; typedefargslist :
  ;  o cons each arg with its default if exists and prefix that with "args"

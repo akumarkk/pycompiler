@@ -369,7 +369,7 @@ base]
 
             (if (not (equal? (cdr var) (list #f)))
               (set! type_varargs_base (append (list type_varargs_base) (cdr var)))
-              (void))
+              (set! type_varargs_base (list type_varargs_base)))
 
             (process-typedargs rest))]
 
@@ -406,6 +406,9 @@ base]
             (process-typedargs rest))]
 
          ))
+
+(define (get_empty_arglist)
+    (process-typedargs '()))
               
 
 (define arg_base '())
