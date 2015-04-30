@@ -129,8 +129,25 @@
                                          (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
                                                                                ($ 2))))
                                                     (if ($ 3)
-                                                      (list 'kwonlyargs (cons ($ 2) ($ 3)))
-                                                     (list 'kwonlyargs ($ 2)))))
+                                                      (begin
+                                                        (display "^^^^^^^^^ KWARGS - ")
+                                                        (display (append (list 'kwonlyargs) (cons ($ 2) ($ 3))))
+                                                        (newline)
+                                                        (display "OTHER OPTION - ")
+                                                        (display (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                                                        (newline)
+                                                        ;(append (list 'kwonlyargs) (cons ($ 2) ($ 3))))
+                                                       (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                                                     ;(list 'kwonlyargs ($ 2)))))
+                                                     (begin
+                                                       (display "^^^^^^^^^^^ KWARGS WITHOUT DEF _ ")
+                                                       (display (append (list 'kwonlyargs) ($ 2)))
+                                                       (newline)
+                                                       (display "OTHER OPTION - ")
+                                                       (display (list 'kwonlyargs ($ 2)))
+                                                       (newline)
+                                                       (list 'kwonlyargs ($ 2))))))
+                                                       ;(append (list 'kwonlyargs) ($ 2))))))
 
                                          (opt ($--> (seq "," "**" tfpdef)
                                                     (list 'kwarg ($ 2)))))
@@ -143,10 +160,19 @@
                                         (if ($ 2)
                                           ;if ($ 2)
                                           ;
+                                          
                                           (if (not (empty? ($ 3)))
                                             (if ($ 4)
-                                                (append (list 'vararg ($ 2)) ($ 3) ($ 4))
-                                                (append (list 'vararg ($ 2)) ($ 3)))
+                                              (begin
+                                                (display "1ST CASE - ")
+                                                (display (append (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                                                (newline)
+                                                (append (list 'vararg ($ 2)) ($ 3) ($ 4)))
+                                              (begin
+                                                (display "2ND CASE - ")
+                                                (display (append (list 'vararg ($ 2)) ($ 3)))
+                                                (newline)
+                                                (append (list 'vararg ($ 2)) ($ 3))))
 
                                             (if ($ 4)
                                               (append (list 'vararg ($ 2)) ($ 4))
@@ -155,14 +181,22 @@
                                           ;else ($ 2)
                                           (if (not (empty? ($ 3)))
                                             (if ($ 4)
-                                              (list ($ 3) ($ 4))
-                                              ($ 3))
+                                              (begin
+                                                (display "5th CASE - ")
+                                                (display (list ($ 3) ($ 4)))
+                                                (newline)
+                                                (list ($ 3) ($ 4)))
+                                              (begin
+                                                (display "6TH CASE - ")
+                                                (display (car ($ 3)))
+                                                (newline)
+                                                ($ 3)))
 
                                             ; Is this the only way to fix this ?
                                             ; Not sure what to do when this grammer is invoked with nothing
                                             (if ($ 4)
                                               (list ($ 4))
-                                              (list 'vararg (cons #f #f)))))))
+                                              (list (list 'vararg (cons #f #f))))))))
 
                                 ($--> (seq "**" tfpdef)
                                       (list 'kwarg ($ 2))))))
@@ -183,11 +217,15 @@
               (if ($ 4)
                 ; When ($ 4) is there
                 (if (not (empty? ($ 3)))
-                  (process-typedargs (append (if ($ 2)
-                                             (list (list 'args (cons ($ 1) ($ 2))))
-                                             (list (list 'args ($ 1))))
-                                           ($ 3)
-                                           (list ($ 4))))
+                  (begin
+                    (display "CASE A - ")
+                    (display ($ 3))
+                    (newline)
+                    (process-typedargs (append (if ($ 2)
+                                                 (list (list 'args (cons ($ 1) ($ 2))))
+                                                 (list (list 'args ($ 1))))
+                                               ($ 3)
+                                               ($ 4))))
                   (process-typedargs (list (if ($ 2)
                                              (list 'args (cons ($ 1) ($ 2)))
                                              (list 'args ($ 1)))
@@ -195,10 +233,14 @@
 
                 ; When ($ 4) is NOT there
                 (if (not (empty? ($ 3)))
-                  (process-typedargs (append (if ($ 2)
-                                             (list (list 'args (cons ($ 1) ($ 2))))
-                                             (list (list 'args ($ 1))))
-                                           ($ 3)))
+                  (begin
+                    (display "CASE B- ")
+                    (display ($ 3))
+                    (newline)
+                    (process-typedargs (append (if ($ 2)
+                                                 (list (list 'args (cons ($ 1) ($ 2))))
+                                                 (list (list 'args ($ 1))))
+                                                 ($ 3))))
 
                   (process-typedargs (list (if ($ 2)
                                            (list 'args (cons ($ 1) ($ 2)))
@@ -212,8 +254,16 @@
                (rep ($--> (seq "," tfpdef (opt ($--> (seq "=" test)
                                                      ($ 2))))
                           (if ($ 3)
-                              (list 'kwonlyargs (cons ($ 2) ($ 3)))
-                             (list 'kwonlyargs ($ 2)))))
+                            (begin
+                              (display "***** KWONLY_ARGS - ")
+                              (display (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                              (newline)
+                              (list 'kwonlyargs (cons ($ 2) ($ 3))))
+                            (begin
+                              (display  "***** KWONLY_ARGS WITHOUT DEF - ")
+                              (display (list 'kwonlyargs ($ 2)))
+                              (newline)
+                              (list 'kwonlyargs ($ 2))))))
 
                (opt ($--> (seq "," "**" tfpdef)
                           (list 'kwarg ($ 3)))))
