@@ -538,7 +538,7 @@
 
 
  (import_name ($--> (seq "import" dotted_as_names)
-                    `(Import, ($ 2))))
+                    `(Import ,@($ 2))))
 
  (import_from
   ($--> (seq
@@ -557,13 +557,15 @@
                    ($ 2))
  
             import_as_names))
-    `(Importfrom, (car (cdr ($ 2))),  ($ 4), `(level, (process-level (car ($ 2)))))))
+
+        ;==>
+        (begin
+          ;(display "I_TWO - ") (display ($ 2)) (newline)
+          ;(display "I_FOUR - ") (display ($ 4)) (newline) 
+
+         `(ImportFrom, (car (cdr ($ 2))),  ($ 4), `(level, (process-level (car ($ 2))))))))
                   
 
-                    ;(if ($ 2)
-                    ;   `(names, `($ 2), #f) 
-                  ;`(names, (string->symbol ($ 1)), #f ))))
-    ;`(Importfrom, (car (cdr ($ 2))), ($ 4), `(level, (process-level (car ($ 2))))))))
 
 
 
@@ -590,7 +592,7 @@
 
  (import_as_names
   ($--> (seq import_as_name (rep (seq "," import_as_name)) (opt ","))
-        `(names, (process-dotted-names (list ($ 1)) ($ 2)))))
+        `(names ,@(process-dotted-names (list ($ 1)) ($ 2)))))
 
 
 (dotted_as_names ($--> (seq dotted_as_name (rep (seq "," dotted_as_name)))
