@@ -14,44 +14,63 @@
 
  (eval_input (seq testlist (rep 'NEWLINE) 'ENDMARKER))
 
- (decorator ($--> (seq "@" dotted_name (opt ($--> (seq "(" (opt arglist) ")")
+ (decorator ($--> (seq "@" 
+                       ($-->  (seq 'NAME (rep (seq "." 'NAME)))
+                              (begin
+                                (if (empty? ($ 2))
+                                  `(Name ,(string->symbol ($ 1))) 
+                                `(, @(process-dotted-attr (list (string->symbol ($ 1))) ($ 2))))))
+
+                       (opt ($--> (seq "(" (opt arglist) ")")
                                                  (if ($ 2)
                                                   ($ 2)
                                                   (list `(args) `(keywords) (list 'starargs #f) (list 'kwargs #f)))))
                                                   ;(cons (list 'args) (list 'keywords) (list 'starargs #f) (list 'kwargs #f)))))
                                                  'NEWLINE)
                   (begin
-                    (display "Populating decorators...")
-                    (newline)
-                    (display ($ 1))
-                    (newline)
-                    (newline)
-                    (display `(Name ,($ 2)))
-                    (newline)
-                    (display ($ 3))
-                    (newline)
-                    (newline)
+                    ;(display "Populating decorators...")
+                    ;(newline)
+                    ;(display ($ 1))
+                    ;(newline)
+                    ;(newline)
+                    ;(display `(Name ,($ 2)))
+                    ;(newline)
+                    ;(display ($ 3))
+                    ;(newline)
+                    ;(newline)
                     ;(display "PROCESSED ARGUMENTS:")
                     ;(display (process-arguments-only ($ 3)))
-                    (newline)
-                    (display "---END---")
-                    (newline)
+                    ;(newline)
+                    ;(display "---END---")
+                    ;(newline)
                     (if ($ 3)
                       (begin
-                        (display "FINAL_DECORATORS - ")
-                        (display `(Call (func (Name ,($ 2))) ,@($ 3)))
-                        (newline)
-                        `(Call (func (Name ,($ 2))) ,@($ 3)))
-                    `(Name ,($ 2))))))
+                        ;(display "FINAL_DECORATORS - ")
+                        ;(display `(Call (func (Name ,($ 2))) ,@($ 3)))
+                        ;(newline)
+                        `(Call (func ,($ 2)) ,@($ 3)))
+                      ($ 2)))))
 
 
  (decorators ($--> (rep+ decorator)
                    (begin
-                     (display "Hit DECORATORS ...")
-                     (newline)
+                     ;(display "Hit DECORATORS ...")
+                     ;(newline)
                    (cons 'decorator_list $$))))
 
- (decorated (seq decorators (or classdef funcdef)))
+ (decorated ($--> (seq decorators (or classdef funcdef))
+                  (begin
+                    ;(display "DECORATED - ")
+                    ;(newline)
+                    ;(display "D_ONE - ")
+                    ;(display ($ 1))
+                    ;(newline)
+                    ;(display "D_TWO - ") (display  ($ 2)) (newline)
+                    ;(display (append (take ($ 2) 7) ($ 1)))
+                    ;(newline)
+                    (process-decorators ($ 1) ($ 2))
+                    ;(append (take ($ 2) 7) (list ($ 1)))
+                    )))
 
  (funcdef ($--> (seq "def" 'NAME parameters (opt ($-->    (seq "->" test)
                                                           ($ 2))) 
@@ -476,6 +495,7 @@
             (or ($--> (seq augassign (or yield_expr testlist)) (list ($ 1) ($ 2)))
                 (rep ($--> (seq "=" (or yield_expr testlist_star_expr)) (list ($ 1) ($ 2))))))
         (begin
+            (display "EXPRE_STMT - ") (newline)
             (cond
                 [(equal? ($ 2) '()) `(Expr, ($ 1))]
                 [(process-augassign ($ 1) ($ 2))]))))
@@ -1124,11 +1144,14 @@
 		(cond
 		[(equal? ($ 3) '()) ($ 2)]
 		[(cons ($ 2) ($ 3))])))
+
  (encoding_decl 'NAME)
+
  (yield_expr ($--> (seq "yield" (opt yield_arg))
                    (cond
-                       [(equal? ($ 2) '()) `(Yield)]
-                       [($ 2)])))
+                       [(not ($ 2)) `(Yield)]
+                       [else ($ 2)])))
+ 
  (yield_arg (or ($--> (seq "from" test) `(YieldFrom, ($ 2)))
                ($--> testlist `(Yield, $$)))))
                                                   

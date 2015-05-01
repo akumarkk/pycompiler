@@ -40,6 +40,30 @@
 
 (define-empty-tokens SPECIAL (ENDMARKER NEWLINE INDENT DEDENT LIT EOF))
 
+(define return-stmt '())
+
+(define (process-decorators decorators def)
+  ;(display "DECORATORS - ")
+  ;(display decorators) (newline)
+  ;(display "DEF - ") (display def) (newline)
+
+  (set! return-stmt '())
+  (match def
+         [(cons 'ClassDef rest)
+          (begin
+            ;(display "Matched ClassDef")
+            ;(newline)
+            (append (take def 7) (list decorators)))]
+
+         [(cons 'FunctionDef rest)
+          (begin
+            ;(display "Matched FunctionDef") (newline)
+            (set! return-stmt (last def))
+            (append (take def 4) (list decorators) (list return-stmt)))]
+
+         ))
+
+
 (define (process-if-ladder elif-ladder else-block)
   ;(display elif-ladder)
   ;(newline)
@@ -798,9 +822,9 @@ base]
 
 
 (define attr (list 'Attribute))
-(define first 1)
+(define attr-first 1)
 
-(define (process-dotted base variables)
+(define (process-dotted-attr base variables)
   ;(display "Base-")
   ;(display base)
   ;(newline)
@@ -811,18 +835,18 @@ base]
   (match variables
    ['()
     (begin
-      (set! first 1)
+      (set! attr-first 1)
         base)]
 
    [(cons (list comma var) rest)
     (begin
-      (if (equal? first 1)
+      (if (equal? attr-first 1)
         (begin
             (set! base (append (list 'Name) base))
-            (set! first 0)
-   ;         (display "Base is now - ");
-    ;        (display base)
-     ;       (newline)
+            (set! attr-first 0)
+            ;(display "Base is now - ");
+            ;(display base)
+            ;(newline)
             )
         (void))
 
@@ -834,7 +858,7 @@ base]
      ; (display "debug base1")
      ; (display base)
      ; (newline) 
-      (process-dotted base  rest))]))
+      (process-dotted-attr base  rest))]))
 
 (define (process-testlist arg1 arg2)
 (match arg2
