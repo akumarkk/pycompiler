@@ -546,11 +546,11 @@
                       `(Return))))
 
  
-(yield_stmt ($--> yield_expr
+(yield_stmt ($--> (seq yield_expr)
                   (begin
-                    (display "COMPOSING EXPR - ")
+                    ;(display "COMPOSING EXPR - ")
                     ;(display `(Expr ,($$)))
-                    (newline)
+                    ;(newline)
                    `(Expr, ($ 1)))))
 
 
