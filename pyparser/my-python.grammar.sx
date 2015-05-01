@@ -866,7 +866,15 @@
                  `(BinOp ,(process-trailers ($ 1) ($ 2)) Pow ,($ 3))
                   (process-trailers ($ 1) ($ 2)))))
  (atom
-  (or (seq "(" (opt (or yield_expr testlist_comp)) ")")
+  (or 
+      ($--> (seq "(" 
+                 (opt (or ($--> yield_expr $$)
+                              testlist_comp)) 
+                 ")")
+            (if ($ 2)
+              ($ 2)
+              '(Tuple)))
+
       (seq "[" (opt testlist_comp) "]")
       (seq "{" (opt dictorsetmaker) "}")
 
@@ -892,11 +900,24 @@
     (cond
     [(equal? (car ($ 2)) '()) `(List, ($ 2))])))
 
+ 
  (trailer
-  (or (seq "(" (opt arglist) ")")
+  (or ($--> (seq "(" (opt arglist) ")")
+            (begin
+              (display "TRAILER - ")
+              (display "ONE - ")
+              (display ($ 2)) (newline)
+            `(Call (func ,@($ 2)))))
+
       ($--> (seq "[" subscriptlist "]")
-		(cons ($ 1) ($ 2)))
-      (seq "." 'NAME)))
+		    (cons ($ 1) ($ 2)))
+
+      ($--> (seq "." 'NAME)
+            (begin
+              (display "TRAILER NAME - ") (display ($ 2)) (newline)
+            (list 'Attribute ($ 2))))))
+
+
  (subscriptlist ($--> (seq subscript (rep ($--> (seq "," subscript) ($ 2))) (opt ","))
 			(cond
 			[(equal? ($ 2) '()) (cond
