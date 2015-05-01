@@ -43,9 +43,15 @@
 (define (process-if-ladder elif-ladder else-block)
   ;(display elif-ladder)
   ;(newline)
+  
   (match elif-ladder
     [(cons (list elif test-cond colon if-body)  rest)
-     `(If , `(test , test-cond), `(body ,@if-body), `(orelse ,@(process-if-ladder rest else-block)))]
+     (begin
+       ;(display "RETURNING - ")
+       ;(display `(If , `(test , test-cond), `(body ,@if-body), `(orelse ,(process-if-ladder rest else-block))))
+       ;(newline)
+        (list `(If  ,(cons 'test (list test-cond)), `(body ,@if-body), `(orelse ,@(process-if-ladder rest else-block)))))]
+
 
     [else
       (if else-block
@@ -859,23 +865,26 @@ arg1]
 (define opers '(ops))
 (define comps '(comparators))
 ;(define first 0)
+
 (define (process-compops base ops)
 ;(begin
  ; (cond [(equal? first 0) ((set! base `(Compare, `(left, base), (process-compops '() ops)))
   ;(set! first 1))
   ;])
-(match ops
-['()
-(begin
-    (set! base (append `(,opers) `(,comps)))
-    base)]
+    (match ops
+        ['()
+            (begin
+                (set! base (append `(,opers) `(,comps)))
+                (set! opers '(ops))
+                (set! comps '(comparators))
+                base)]
 
-[(cons (list op exp) rest)
-                   (begin
-		   ;(display rest)
-		   (set! opers (append opers (list op)))
-		   (set! comps (append comps `(,exp)))
-		   (process-compops '() rest))]))
+        [(cons (list op exp) rest)
+            (begin
+    		   ;(display rest)
+	    	   (set! opers (append opers (list op)))
+		       (set! comps (append comps `(,exp)))
+		       (process-compops '() rest))]))
 
 ;; The parser:
 (define pyparse

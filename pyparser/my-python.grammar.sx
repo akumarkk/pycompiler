@@ -652,11 +652,15 @@
         ":"
         suite
         ($--> (rep (seq "elif" test ":" suite))
-              $$)
+               $$)
               ;`(, ($ 2), ($ 4))))
         (opt ($-->  (seq "else" ":" suite)
                     ($ 3))))
-   `(If, `(test, ($ 2)), `(body ,@($ 4)), `(orelse, @(process-if-ladder ($ 5) ($ 6))))))
+        ;==>
+        ;
+        (if (empty? (process-if-ladder ($ 5) ($ 6)))
+          `(If (test ,($ 2)), `(body ,@($ 4)), `(orelse))
+        `(If (test ,($ 2)), `(body ,@($ 4)) ,(cons 'orelse (process-if-ladder ($ 5) ($ 6)))))))
 
 
 ;TODO  - There is an entanglement of suite in else's suite. I suspect it to be a bug with suite.
