@@ -495,7 +495,9 @@
             (or ($--> (seq augassign (or yield_expr testlist)) (list ($ 1) ($ 2)))
                 (rep ($--> (seq "=" (or yield_expr testlist_star_expr)) (list ($ 1) ($ 2))))))
         (begin
-            (display "EXPRE_STMT - ") (newline)
+            ;(display "EXPRE_STMT - ") (newline)
+            ;(display ($ 1)) (newline)
+            ;(display "TWO - ") (display ($ 2)) (newline)
             (cond
                 [(equal? ($ 2) '()) `(Expr, ($ 1))]
                 [(process-augassign ($ 1) ($ 2))]))))
@@ -544,7 +546,12 @@
                       `(Return))))
 
  
-(yield_stmt yield_expr)
+(yield_stmt ($--> yield_expr
+                  (begin
+                    (display "COMPOSING EXPR - ")
+                    ;(display `(Expr ,($$)))
+                    (newline)
+                   `(Expr, ($ 1)))))
 
 
  (raise_stmt ($--> (seq "raise" (opt ($-->   (seq test (opt ($--> (seq "from" test)
@@ -1148,9 +1155,24 @@
  (encoding_decl 'NAME)
 
  (yield_expr ($--> (seq "yield" (opt yield_arg))
-                   (cond
-                       [(not ($ 2)) `(Yield)]
-                       [else ($ 2)])))
+                   (begin
+                     ;(display "YIELD_EXPR - ")
+                     ;(display ($ 2)) (newline)
+                   (if ($ 2)
+                     ($ 2)
+                     (list 'Yield)))))
+                   ;(begin
+                   ;  (display "YIELD_EXPR - ")
+                   ;  (display ($ 2)) (newline)
+                   ;(cond
+                   ;    [(not ($ 2)) 
+                   ;     (begin
+                   ;       (display "YIELD - ")
+                   ;       (display (list 'Yield))
+                   ;       (newline)
+                   ;       (list 'Yield))]
+
+                    ;   [else ($ 2)]))))
  
  (yield_arg (or ($--> (seq "from" test) `(YieldFrom, ($ 2)))
                ($--> testlist `(Yield, $$)))))

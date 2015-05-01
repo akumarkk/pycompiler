@@ -134,7 +134,7 @@ base]
    ;(display "EXP - ") (display exp) (newline)
    
    (match op
-          [(or "+=" "-=" "*=" "/=" "%=" "//=" "<<=" ">>=" "&=" "^="  "|=")
+          [(or "+=" "-=" "*=" "/=" "%=" "&=" "|=" "^=" "<<=" ">>=" "**=" "//=")
 
            `(AugAssign, base ,
                         (cond [(equal? op "+=") `Add]
@@ -147,7 +147,8 @@ base]
                               [(equal? op ">>=") `RShift]
                               [(equal? op "&=") `BitAnd]
                               [(equal? op "^=") `BitXor]
-                              [(equal? op "|=") `BitOr]),
+                              [(equal? op "|=") `BitOr]
+                              [(equal? op "**=") `Pow]),
                         (car exp))]
           [(cons "=" name)
            (process-assign (list base) ops)]))])))
