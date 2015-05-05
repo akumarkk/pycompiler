@@ -525,7 +525,7 @@
       $$))
 
  (del_stmt ($--> (seq "del" exprlist)
-                 `(Delete, ($ 2))))
+                 `(Delete, @(if (= (length ($ 2)) 2) `(,($ 2)) (cdr ($ 2)))))) 
 
 
  (pass_stmt ($--> "pass"
@@ -875,7 +875,9 @@
               ($ 2)
               '(Tuple)))
 
-      (seq "[" (opt testlist_comp) "]")
+      ($--> (seq "[" (opt testlist_comp) "]") (begin  (cond [(equal? (caadr ($ 2)) 'for) `(ListComp ,@($ 2))]
+						    [(not (null? ($ 2))) `(List ,@($ 2))]
+							 [`(List)])))
       (seq "{" (opt dictorsetmaker) "}")
 
       ($--> (seq 'NAME) `(Name ,(string->symbol ($ 1))))
@@ -897,39 +899,38 @@
   (seq
    (or test star_expr)
    (or comp_for ($--> (seq (rep ($--> (seq "," (or test star_expr)) ($ 2))) (opt ",")) (cons ($ 1) ($ 2)))))
+    (begin ;(display ($ 1)) (newline) (display ($ 2)) 
     (cond
-    [(equal? (car ($ 2)) '()) `(List, ($ 2))])))
+    [(or (equal? ($ 2) ",") (equal? ($ 2) #f)) `(List, ($ 1))]
+    [(equal? (car ($ 2)) 'for) (list ($ 1) ($ 2))]
+    [`( ,($ 1) ,@(car ($ 2)))]))))
 
  
  (trailer
   (or ($--> (seq "(" (opt arglist) ")")
-            (begin
-              (display "TRAILER - ")
-              (display "ONE - ")
-              (display ($ 2)) (newline)
-            `(Call (func ,@($ 2)))))
+            		(cons ($ 1) ($ 2)))
 
       ($--> (seq "[" subscriptlist "]")
 		    (cons ($ 1) ($ 2)))
 
       ($--> (seq "." 'NAME)
-            (begin
-              (display "TRAILER NAME - ") (display ($ 2)) (newline)
-            (list 'Attribute ($ 2))))))
+                  (cons ($ 1) ($ 2)))))
 
 
  (subscriptlist ($--> (seq subscript (rep ($--> (seq "," subscript) ($ 2))) (opt ","))
 			(cond
-			[(equal? ($ 2) '()) (cond
+			[(equal? ($ 2) '())  (cond
 						[(not (equal? ($ 3) #f)) (if (equal? (car ($ 1)) 'Slice) `(ExtSlice, ($ 1))
 													 `(Index, `(Tuple, ($ 1))))]
 						[(equal? (car ($ 1)) 'Slice) ($ 1)]
 						[`(Index, ($ 1))])]
 			[(equal? (car (car ($ 2))) 'Slice) 
-			  (if (equal? (car ($ 1)) 'Slice)`(ExtSlice, ($ 1), @($ 2)) 
-					`(ExtSlice, `(Index, ($ 1)), @($ 2)))]
-			[(equal? (car ($ 1)) 'Slice) `(ExtSlice,($ 1))]
-			[`(Index, `(Tuple, ($ 1), @($ 2)))])))
+			  (if (equal? (car ($ 1)) 'Slice)`(ExtSlice, ($ 1) ,($ 2)) 
+					`(ExtSlice, `(Index, ($ 1)) ,($ 2)))]
+			[(equal? (car ($ 1)) 'Slice) (if (empty? ($ 2)) `(ExtSlice,($ 1)) `(ExtSlice ,($ 1) ,@(map (lambda (x)
+														`(Index ,x)) ($ 2))))]
+			
+			[`(Index, `(Tuple, ($ 1) ,@($ 2)))])))
 
  (subscript (or test 
 		($--> (seq (opt test) ":" (opt test) (opt sliceop)) `(Slice, ($ 1), ($ 3), ($ 4)))))
@@ -1167,10 +1168,10 @@
 		 (cond
 			[(equal? ($ 5) #f) `(for, ($ 2) in, ($ 4) if)]
 			[(equal? ($ 5) '()) `(for, ($ 2) in, ($ 4) if)]
-			[`(for, ($ 2) in, ($ 4), ($ 5) if)])))
+			[`(for, ($ 2) in, ($ 4) if ,($ 5))])))
  (comp_if ($--> (seq "if" test_nocond (opt comp_iter))
 		(cond
-		[(equal? ($ 3) '()) ($ 2)]
+		[(equal? ($ 3) #f) ($ 2)]
 		[(cons ($ 2) ($ 3))])))
 
  (encoding_decl 'NAME)

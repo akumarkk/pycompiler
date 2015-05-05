@@ -87,10 +87,15 @@
 
 ;; Supply auxiliary helpers here, like process-trailers:
 
-(define (process-trailers base trailers)
- (match trailers
+(define (process-trailers base trailers)   
+ (match trailers 
   ['()      base]
+  [(cons (cons "(" a) rest) (if (= (length trailers) 1) 
+				`(Call (func ,base) ,@(if (equal? a #f) (list `(args) `(keywords) `(starargs #f) `(kwargs #f)) a))
+	(process-trailers `(Call (func ,base) ,@(if (equal? a #f) (list `(args) `(keywords) `(starargs #f) `(kwargs #f)) a)) (cdr trailers)))]
   [(cons (cons "[" a) rest) `(Subscript, base,a)]
+  [(cons (cons "." a) rest) (if (= (length trailers) 1) `(Attribute ,base ,(string->symbol a)) 
+								(process-trailers `(Attribute ,base ,(string->symbol a)) (cdr trailers)))]
   [_ (cons base trailers)]))
 
 ;; You may want to put definitions here rather than defining
